@@ -21,12 +21,16 @@ export default function NavHeader() {
           <Link href="/" className="hover:text-white transition-colors">
             Portal
           </Link>
-          <Link href="/admin/properties" className="hover:text-white transition-colors">
-            Properties
-          </Link>
-          <Link href="/admin/packages" className="hover:text-white transition-colors">
-            Packages
-          </Link>
+          {user?.isAdmin && (
+            <>
+              <Link href="/admin/properties" className="hover:text-white transition-colors">
+                Properties
+              </Link>
+              <Link href="/admin/packages" className="hover:text-white transition-colors">
+                Packages
+              </Link>
+            </>
+          )}
 
           {/* Auth State Button */}
           <div className="border-l border-white/10 pl-6 flex items-center gap-4">

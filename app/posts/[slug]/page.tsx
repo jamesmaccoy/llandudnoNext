@@ -3,6 +3,7 @@
 import React, { useState, useEffect, use, Suspense } from "react";
 import Link from "next/link";
 import { useAuth, AuthProvider } from "@/components/auth";
+import CalendarPicker from "@/components/CalendarPicker";
 
 interface Property {
   id: string;
@@ -43,6 +44,7 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
   // Date Picker Inputs
   const [fromDate, setFromDate] = useState("2026-06-16");
   const [toDate, setToDate] = useState("2026-06-19");
+  const [bookings, setBookings] = useState<any[]>([]);
 
   const loadPropertyData = async () => {
     try {
@@ -58,6 +60,13 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
           const pkgResult = await pkgRes.json();
           if (pkgResult.success && pkgResult.data) {
             setPackages(pkgResult.data);
+          }
+          
+          // 3. Fetch Bookings for this property
+          const bksRes = await fetch(`/api/bookings?propertyId=${found.id}`);
+          const bksResult = await bksRes.json();
+          if (bksResult.success && bksResult.data) {
+            setBookings(bksResult.data);
           }
         }
       }
@@ -304,26 +313,15 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1 block text-[9px] text-zinc-500 uppercase tracking-wider">Check-in</label>
-                    <input
-                      type="date"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white focus:border-teal-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[9px] text-zinc-500 uppercase tracking-wider">Check-out</label>
-                    <input
-                      type="date"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white focus:border-teal-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
+                <CalendarPicker
+                  selectedFromDate={fromDate}
+                  selectedToDate={toDate}
+                  bookings={bookings}
+                  onChange={(start, end) => {
+                    setFromDate(start);
+                    setToDate(end);
+                  }}
+                />
 
                 <button
                   onClick={handleSaveDates}

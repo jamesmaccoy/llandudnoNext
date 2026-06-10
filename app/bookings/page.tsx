@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, AuthProvider } from "@/components/auth";
 import Link from "next/link";
+import CalendarPicker from "@/components/CalendarPicker";
 
 interface Property {
   id: string;
@@ -204,6 +205,38 @@ function BookingsCheckoutContent() {
   // Total calculated combining baseCost, packageMultiplier, and packageBaseRate
   const finalTotal = (baseCost + packageBaseRate) * packageMultiplier;
 
+  const handleUpdateDates = async (start: string, end: string) => {
+    if (!user) return;
+
+    // Local update for responsive UI feedback
+    if (!end) {
+      setSavedDates({
+        fromDate: new Date(start).toISOString(),
+        toDate: new Date(start).toISOString()
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/user/dates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.uid,
+          fromDate: new Date(start).toISOString(),
+          toDate: new Date(end).toISOString()
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setSavedDates(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to update user stay dates:", err);
+    }
+  };
+
   const handleBookNow = async () => {
     if (dateConflict) {
       alert("Please resolve the date conflict before proceeding.");
@@ -378,10 +411,23 @@ function BookingsCheckoutContent() {
               </div>
             </div>
 
-            {/* Date Overlap block alert */}
+            {/* Date Overlap block alert & visual resolver */}
             {dateConflict && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-center text-xs font-bold text-red-400">
-                ⚠️ {dateConflict}
+              <div className="space-y-4">
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-center text-xs font-bold text-red-400">
+                  ⚠️ {dateConflict}
+                </div>
+                <div className="rounded-3xl border border-white/5 bg-zinc-950 p-4 space-y-3">
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Select an available date range on the calendar below to update your stay dates:
+                  </p>
+                  <CalendarPicker
+                    selectedFromDate={savedDates.fromDate.split("T")[0]}
+                    selectedToDate={savedDates.toDate.split("T")[0]}
+                    bookings={bookingsList}
+                    onChange={handleUpdateDates}
+                  />
+                </div>
               </div>
             )}
 

@@ -15,6 +15,7 @@ interface AuthUser {
   email: string | null;
   displayName: string | null;
   isAnonymous: boolean;
+  isAdmin: boolean;
 }
 
 interface AuthContextType {
@@ -35,15 +36,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
-          setUser({
+          const initialUser: AuthUser = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
-            isAnonymous: firebaseUser.isAnonymous
-          });
+            isAnonymous: firebaseUser.isAnonymous,
+            isAdmin: false
+          };
+          setUser(initialUser);
           setIsMockUser(false);
+          setLoading(false);
+
+          // Fetch actual admin status asynchronously
+          try {
+            const res = await fetch(`/api/user/profile?userId=${firebaseUser.uid}&email=${firebaseUser.email || ""}`);
+            const result = await res.json();
+            if (result.success && result.data) {
+              setUser(prev => prev && prev.uid === firebaseUser.uid ? { ...prev, isAdmin: result.data.isAdmin } : prev);
+            }
+          } catch (err) {
+            console.error("Failed to query profile for admin status:", err);
+          }
         } else {
           // Check local storage mock session as fallback
           const localSession = localStorage.getItem("auth:mock_session");
@@ -53,8 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             setUser(null);
           }
+          setLoading(false);
         }
-        setLoading(false);
       });
       return unsubscribe;
     } catch (err) {
@@ -75,11 +90,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.warn(`[Firebase Auth] Failed, trying offline mock login: ${err.message}`);
       // Fallback: Create mock session
+      const isUserAdminMock = email.toLowerCase().includes("admin") || email.toLowerCase() === "thankyou.digital@gmail.com";
       const mockSession: AuthUser = {
         uid: `mock_${email.replace(/[^\w]/g, "_")}`,
         email,
         displayName: email.split("@")[0],
-        isAnonymous: false
+        isAnonymous: false,
+        isAdmin: isUserAdminMock
       };
       localStorage.setItem("auth:mock_session", JSON.stringify(mockSession));
       setUser(mockSession);
@@ -95,11 +112,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await createUserWithEmailAndPassword(auth, email, pass);
     } catch (err: any) {
       console.warn(`[Firebase Auth] Signup failed, fall back to mock signup: ${err.message}`);
+      const isUserAdminMock = email.toLowerCase().includes("admin") || email.toLowerCase() === "thankyou.digital@gmail.com";
       const mockSession: AuthUser = {
         uid: `mock_${email.replace(/[^\w]/g, "_")}`,
         email,
         displayName: email.split("@")[0],
-        isAnonymous: false
+        isAnonymous: false,
+        isAdmin: isUserAdminMock
       };
       localStorage.setItem("auth:mock_session", JSON.stringify(mockSession));
       setUser(mockSession);

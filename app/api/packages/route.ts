@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPackage, listPackages } from "@/lib/firebase";
+import { createPackage, listPackages, isUserAdmin } from "@/lib/firebase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,6 +15,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check admin permissions
+    const userId = request.headers.get("x-user-id");
+    const email = request.headers.get("x-user-email");
+    if (!userId || !(await isUserAdmin(userId, email))) {
+      return NextResponse.json({ success: false, data: "Unauthorized access: admin privileges required." }, { status: 403 });
+    }
+
     const body = await request.json().catch(() => ({}));
     const {
       id,

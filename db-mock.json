@@ -1,24 +1,4 @@
 {
-  "posts": [
-    {
-      "id": "shack",
-      "title": "The Shack",
-      "slug": "the-shack",
-      "basePricePerNight": 1500
-    },
-    {
-      "id": "cottage",
-      "title": "The Cottage",
-      "slug": "the-cottage",
-      "basePricePerNight": 1200
-    },
-    {
-      "title": "Ocean View Villa",
-      "slug": "ocean-view-villa",
-      "basePricePerNight": 2200,
-      "id": "ocean-view-villa"
-    }
-  ],
   "packages": [
     {
       "id": "shack_stack",
@@ -119,5 +99,27 @@
       "fromDate": "2026-07-20T00:00:00.000Z",
       "toDate": "2026-07-30T00:00:00.000Z"
     }
-  }
+  },
+  "properties": [
+    {
+      "id": "shack",
+      "title": "The Shack",
+      "slug": "the-shack",
+      "basePricePerNight": 1650,
+      "airbnbCalendarUrl": "https://www.airbnb.co.za/calendar/ical/1667386340564933279.ics?t=test",
+      "googleCalendarUrl": ""
+    },
+    {
+      "id": "cottage",
+      "title": "The Cottage",
+      "slug": "the-cottage",
+      "basePricePerNight": 1200
+    },
+    {
+      "title": "Ocean View Villa",
+      "slug": "ocean-view-villa",
+      "basePricePerNight": 2200,
+      "id": "ocean-view-villa"
+    }
+  ]
 }

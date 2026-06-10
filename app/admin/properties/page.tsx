@@ -1,15 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useAuth } from "@/components/auth";
 
 interface Property {
   id: string;
   title: string;
   slug: string;
   basePricePerNight: number;
+  airbnbCalendarUrl?: string;
+  googleCalendarUrl?: string;
 }
 
 export default function AdminPropertiesPage() {
+  const { user, loading } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,6 +24,8 @@ export default function AdminPropertiesPage() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [airbnbCalendarUrl, setAirbnbCalendarUrl] = useState("");
+  const [googleCalendarUrl, setGoogleCalendarUrl] = useState("");
 
   const fetchProperties = async () => {
     try {
@@ -64,11 +71,17 @@ export default function AdminPropertiesPage() {
     try {
       const response = await fetch("/api/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-id": user?.uid || "",
+          "x-user-email": user?.email || ""
+        },
         body: JSON.stringify({
           title,
           slug,
-          basePricePerNight: Number(basePrice)
+          basePricePerNight: Number(basePrice),
+          airbnbCalendarUrl,
+          googleCalendarUrl
         })
       });
 
@@ -82,6 +95,8 @@ export default function AdminPropertiesPage() {
       setTitle("");
       setSlug("");
       setBasePrice("");
+      setAirbnbCalendarUrl("");
+      setGoogleCalendarUrl("");
       fetchProperties(); // reload list
     } catch (err: any) {
       setStatusMessage({ type: "error", text: err.message || "An error occurred." });
@@ -89,6 +104,42 @@ export default function AdminPropertiesPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
+      </div>
+    );
+  }
+
+  if (!user || !user.isAdmin) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full rounded-3xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-md">
+          <span className="text-4xl">🔐</span>
+          <h2 className="text-xl font-black text-white mt-4">Access Denied</h2>
+          <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+            Administrative privileges are required to access this portal. Please sign in with an administrator account to continue.
+          </p>
+          <div className="mt-6 flex flex-col gap-2">
+            <a
+              href="/login"
+              className="w-full rounded-xl bg-teal-500 py-3 text-center text-xs font-bold text-white hover:bg-teal-600 transition-all shadow-md shadow-teal-500/10"
+            >
+              Sign In as Admin
+            </a>
+            <a
+              href="/"
+              className="w-full rounded-xl bg-white/5 border border-white/10 py-3 text-center text-xs font-bold text-zinc-300 hover:text-white transition-all"
+            >
+              Back to Home
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-teal-500/30 selection:text-teal-200">
@@ -168,6 +219,32 @@ export default function AdminPropertiesPage() {
                 />
               </div>
 
+              <div>
+                <label className="mb-1 block text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                  Airbnb iCal URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://www.airbnb.co.za/calendar/ical/..."
+                  value={airbnbCalendarUrl}
+                  onChange={(e) => setAirbnbCalendarUrl(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none placeholder:text-zinc-600 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                  Google Calendar iCal URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://calendar.google.com/calendar/ical/..."
+                  value={googleCalendarUrl}
+                  onChange={(e) => setGoogleCalendarUrl(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none placeholder:text-zinc-600 text-xs"
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -200,15 +277,40 @@ export default function AdminPropertiesPage() {
                 {properties.map((p) => (
                   <div
                     key={p.id}
-                    className="group rounded-2xl border border-white/5 bg-white/5 p-4 flex items-center justify-between hover:border-white/10 hover:bg-white/10 transition-all"
+                    className="group rounded-2xl border border-white/5 bg-white/5 p-4 flex flex-col gap-2 hover:border-white/10 hover:bg-white/10 transition-all"
                   >
-                    <div>
-                      <h3 className="text-sm font-bold text-white">{p.title}</h3>
-                      <span className="text-[10px] text-zinc-500 block font-mono">id: {p.id} | slug: {p.slug}</span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-white">{p.title}</h3>
+                        <span className="text-[10px] text-zinc-550 block font-mono">id: {p.id} | slug: {p.slug}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-zinc-550">Price/Night</span>
+                        <p className="text-sm font-black text-teal-400">R {p.basePricePerNight.toLocaleString()}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[10px] text-zinc-500">Price/Night</span>
-                      <p className="text-sm font-black text-teal-400">R {p.basePricePerNight.toLocaleString()}</p>
+                    {(p.airbnbCalendarUrl || p.googleCalendarUrl) && (
+                      <div className="border-t border-white/5 pt-2 mt-1 space-y-1 text-[9px] text-zinc-450 font-mono">
+                        {p.airbnbCalendarUrl && (
+                          <div className="truncate" title={p.airbnbCalendarUrl}>
+                            <span className="text-teal-400 font-bold">Airbnb:</span> {p.airbnbCalendarUrl}
+                          </div>
+                        )}
+                        {p.googleCalendarUrl && (
+                          <div className="truncate" title={p.googleCalendarUrl}>
+                            <span className="text-emerald-400 font-bold">Google:</span> {p.googleCalendarUrl}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-1">
+                      <span className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Edit Config</span>
+                      <Link
+                        href={`/admin/properties/${p.id}`}
+                        className="rounded-lg bg-teal-500/10 border border-teal-500/20 px-2.5 py-1 text-[10px] font-bold text-teal-400 hover:bg-teal-500 hover:text-white transition-all active:scale-95"
+                      >
+                        Edit Details →
+                      </Link>
                     </div>
                   </div>
                 ))}

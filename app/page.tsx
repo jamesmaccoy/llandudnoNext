@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AuthProvider, useAuth, AuthCard } from "@/components/auth";
 import Link from "next/link";
+import CalendarPicker from "@/components/CalendarPicker";
 
 interface Property {
   id: string;
@@ -32,6 +33,7 @@ function HomePageContent() {
   const [isSavingDates, setIsSavingDates] = useState(false);
   const [savedDates, setSavedDates] = useState<{ fromDate: string; toDate: string } | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
 
   // Load properties
   useEffect(() => {
@@ -49,6 +51,22 @@ function HomePageContent() {
       }
     };
     fetchProperties();
+  }, []);
+
+  // Fetch bookings to display in CalendarPicker
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const res = await fetch("/api/bookings");
+        const result = await res.json();
+        if (result.success && result.data) {
+          setBookings(result.data);
+        }
+      } catch (err) {
+        console.error("Failed to load bookings for calendar picker:", err);
+      }
+    };
+    fetchBookings();
   }, []);
 
   // Fetch saved dates if user is logged in
@@ -186,8 +204,8 @@ function HomePageContent() {
           </div>
         )}
 
-        {/* Step 1: Dates & Authentication Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-12 border-b border-white/5 pb-12">
+        {/* Step 1: Dates Selector */}
+        <div className="w-full max-w-xl mx-auto mb-12 border-b border-white/5 pb-12">
           {/* Date Picker Selector */}
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-md space-y-4">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -197,26 +215,15 @@ function HomePageContent() {
               Define check-in and check-out ranges. Dates must be persistent to user profiles before package selection is enabled.
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1 block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Check-in Date</label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Check-out Date</label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none"
-                />
-              </div>
-            </div>
+            <CalendarPicker
+              selectedFromDate={fromDate}
+              selectedToDate={toDate}
+              bookings={bookings}
+              onChange={(start, end) => {
+                setFromDate(start);
+                setToDate(end);
+              }}
+            />
 
             {saveStatus && (
               <div className="text-center text-[10px] font-bold text-zinc-300 bg-white/5 py-2.5 rounded-xl border border-white/5 animate-pulse">
@@ -240,14 +247,6 @@ function HomePageContent() {
                 : "Confirm & Save Dates"}
             </button>
           </div>
-
-          {/* Authentication Panel */}
-          <div className="space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="text-teal-400">👤</span> Guest Credentials
-            </h2>
-            <AuthCard />
-          </div>
         </div>
 
         {/* Step 2: Property Listings Selection */}
@@ -256,7 +255,7 @@ function HomePageContent() {
             <span>🏡</span> Select Destination Property
           </h2>
           <p className="text-xs text-zinc-400 text-center max-w-md mx-auto leading-relaxed">
-            After configuring check-in dates and signing in above, click "Book Stay" to proceed to checkout options.
+            After configuring check-in dates, select a property to view options and book your package.
           </p>
 
           {isLoadingProps ? (
@@ -298,21 +297,12 @@ function HomePageContent() {
                         <span className="text-base font-black text-teal-400">R {p.basePricePerNight.toLocaleString()}</span>
                       </div>
 
-                      {datesLocked ? (
-                        <Link
-                          href={`/bookings?propertyId=${p.id}`}
-                          className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2.5 text-xs font-bold text-white hover:brightness-110 active:scale-95 transition-all shadow-md shadow-teal-500/10"
-                        >
-                          Book Stay →
-                        </Link>
-                      ) : (
-                        <button
-                          disabled
-                          className="rounded-xl bg-neutral-900 border border-neutral-800 px-4 py-2.5 text-xs font-bold text-zinc-500 cursor-not-allowed"
-                        >
-                          Select Dates & Login
-                        </button>
-                      )}
+                      <Link
+                        href={`/posts/${p.slug}`}
+                        className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-2.5 text-xs font-bold text-white hover:brightness-110 active:scale-95 transition-all shadow-md shadow-teal-500/10"
+                      >
+                        View Details →
+                      </Link>
                     </div>
                   </div>
                 );

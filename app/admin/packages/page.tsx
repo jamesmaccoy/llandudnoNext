@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/components/auth";
 
 interface Property {
   id: string;
@@ -23,6 +24,7 @@ interface Package {
 }
 
 export default function AdminPackagesPage() {
+  const { user, loading } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
@@ -109,7 +111,11 @@ export default function AdminPackagesPage() {
     try {
       const response = await fetch("/api/packages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-id": user?.uid || "",
+          "x-user-email": user?.email || ""
+        },
         body: JSON.stringify({
           id: pkgId,
           propertyId: selectedPropertyId,
@@ -146,6 +152,42 @@ export default function AdminPackagesPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
+      </div>
+    );
+  }
+
+  if (!user || !user.isAdmin) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full rounded-3xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-md">
+          <span className="text-4xl">🔐</span>
+          <h2 className="text-xl font-black text-white mt-4">Access Denied</h2>
+          <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+            Administrative privileges are required to access this portal. Please sign in with an administrator account to continue.
+          </p>
+          <div className="mt-6 flex flex-col gap-2">
+            <a
+              href="/login"
+              className="w-full rounded-xl bg-teal-500 py-3 text-center text-xs font-bold text-white hover:bg-teal-600 transition-all shadow-md shadow-teal-500/10"
+            >
+              Sign In as Admin
+            </a>
+            <a
+              href="/"
+              className="w-full rounded-xl bg-white/5 border border-white/10 py-3 text-center text-xs font-bold text-zinc-300 hover:text-white transition-all"
+            >
+              Back to Home
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-teal-500/30 selection:text-teal-200">

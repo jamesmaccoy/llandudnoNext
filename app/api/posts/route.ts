@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createProperty, listProperties } from "@/lib/firebase";
+import { createProperty, listProperties, isUserAdmin } from "@/lib/firebase";
 
 export async function GET() {
   try {
@@ -13,8 +13,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check admin permissions
+    const userId = request.headers.get("x-user-id");
+    const email = request.headers.get("x-user-email");
+    if (!userId || !(await isUserAdmin(userId, email))) {
+      return NextResponse.json({ success: false, data: "Unauthorized access: admin privileges required." }, { status: 403 });
+    }
+
     const body = await request.json().catch(() => ({}));
-    const { title, slug, basePricePerNight } = body;
+    const { title, slug, basePricePerNight, airbnbCalendarUrl, googleCalendarUrl } = body;
 
     if (!title || !slug || basePricePerNight === undefined) {
       return NextResponse.json({ success: false, data: "Missing required fields (title, slug, basePricePerNight)" }, { status: 400 });
@@ -28,7 +35,9 @@ export async function POST(request: NextRequest) {
     const property = await createProperty({
       title,
       slug: slug.trim().toLowerCase(),
-      basePricePerNight: price
+      basePricePerNight: price,
+      airbnbCalendarUrl: airbnbCalendarUrl || "",
+      googleCalendarUrl: googleCalendarUrl || ""
     });
 
     return NextResponse.json({ success: true, data: property }, { status: 201 });

@@ -10,7 +10,7 @@ const MOCK_DB_PATH = path.join(process.cwd(), "db-mock.json");
 
 // Default initial data for mock DB
 const DEFAULT_MOCK_DATA = {
-  posts: [
+  properties: [
     { id: "shack", title: "The Shack", slug: "the-shack", basePricePerNight: 1500 },
     { id: "cottage", title: "The Cottage", slug: "the-cottage", basePricePerNight: 1200 }
   ],
@@ -28,7 +28,14 @@ function readMockDb(): any {
   try {
     if (fs.existsSync(MOCK_DB_PATH)) {
       const content = fs.readFileSync(MOCK_DB_PATH, "utf8");
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      // Migrate legacy posts key to properties key on the fly if needed
+      if (!parsed.properties && parsed.posts) {
+        parsed.properties = parsed.posts;
+        delete parsed.posts;
+        writeMockDb(parsed);
+      }
+      return parsed;
     }
   } catch (err: any) {
     console.error("[Mock DB] Failed to read db-mock.json:", err.message);
@@ -97,25 +104,26 @@ export function getProjectId(): string {
 // PROPERTIES / POSTS CRUD
 // ==========================================
 
-export async function createProperty(data: { id?: string; title: string; slug: string; basePricePerNight: number }): Promise<any> {
+export async function createProperty(data: { id?: string; title: string; slug: string; basePricePerNight: number; airbnbCalendarUrl?: string; googleCalendarUrl?: string }): Promise<any> {
   const db = getFirestore();
   const id = data.id || data.slug.trim().toLowerCase();
   const propertyRecord = { ...data, id };
 
   if (isMockMode || !db) {
     const dbData = readMockDb();
+    dbData.properties = dbData.properties || [];
     // Overwrite if exists, otherwise push
-    const index = dbData.posts.findIndex((p: any) => p.id === id);
+    const index = dbData.properties.findIndex((p: any) => p.id === id);
     if (index >= 0) {
-      dbData.posts[index] = propertyRecord;
+      dbData.properties[index] = propertyRecord;
     } else {
-      dbData.posts.push(propertyRecord);
+      dbData.properties.push(propertyRecord);
     }
     writeMockDb(dbData);
     return propertyRecord;
   }
 
-  await db.collection("posts").doc(id).set(propertyRecord);
+  await db.collection("properties").doc(id).set(propertyRecord);
   return propertyRecord;
 }
 
@@ -124,15 +132,15 @@ export async function listProperties(): Promise<any[]> {
 
   if (isMockMode || !db) {
     const dbData = readMockDb();
-    return dbData.posts;
+    return dbData.properties || [];
   }
 
   try {
-    const snap = await db.collection("posts").get();
+    const snap = await db.collection("properties").get();
     return snap.docs.map((doc: any) => doc.data());
   } catch (err) {
     console.error("[Firebase] listProperties error:", err);
-    return readMockDb().posts;
+    return readMockDb().properties || [];
   }
 }
 
@@ -142,16 +150,17 @@ export async function getProperty(idOrSlug: string): Promise<any> {
 
   if (isMockMode || !db) {
     const dbData = readMockDb();
-    return dbData.posts.find((p: any) => p.id === target || p.slug === target) || null;
+    const props = dbData.properties || [];
+    return props.find((p: any) => p.id === target || p.slug === target) || null;
   }
 
   try {
     // Try by ID first
-    let doc = await db.collection("posts").doc(target).get();
+    let doc = await db.collection("properties").doc(target).get();
     if (doc.exists) return doc.data();
 
     // If not found, query by slug
-    const snap = await db.collection("posts").where("slug", "==", target).limit(1).get();
+    const snap = await db.collection("properties").where("slug", "==", target).limit(1).get();
     if (!snap.empty) return snap.docs[0].data();
   } catch (err) {
     console.warn(`[Firebase] Failed to query property "${target}":`, err);
@@ -361,4 +370,43 @@ export async function getUserDates(uid: string): Promise<any | null> {
     console.error("[Firebase] getUserDates error:", err);
   }
   return null;
+}
+
+export async function isUserAdmin(uid: string, email?: string | null): Promise<boolean> {
+  // Predefined admin emails
+  const adminEmails = [
+    "thankyou.digital@gmail.com",
+    "admin@llandudnostays.co.za",
+    "jmaclachlan@gmail.com",
+    "admin@example.com"
+  ];
+  
+  if (email && adminEmails.includes(email.toLowerCase())) {
+    return true;
+  }
+  if (email && (email.toLowerCase().startsWith("admin@") || email.toLowerCase().startsWith("admin+"))) {
+    return true;
+  }
+
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    // Allow local mock users with emails containing "admin" to be admin automatically
+    if (email && email.toLowerCase().includes("admin")) {
+      return true;
+    }
+    const userProfiles = dbData.userProfiles || {};
+    return !!userProfiles[uid]?.isAdmin;
+  }
+
+  try {
+    const doc = await db.collection("users").doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      return !!data.isAdmin;
+    }
+  } catch (err) {
+    console.error("[Firebase] isUserAdmin error:", err);
+  }
+  return false;
 }

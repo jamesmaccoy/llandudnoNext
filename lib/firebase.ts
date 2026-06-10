@@ -1,0 +1,364 @@
+import * as admin from "firebase-admin";
+import * as fs from "fs";
+import * as path from "path";
+
+let app: any;
+let cachedProjectId: string | null = null;
+let isMockMode = false;
+
+const MOCK_DB_PATH = path.join(process.cwd(), "db-mock.json");
+
+// Default initial data for mock DB
+const DEFAULT_MOCK_DATA = {
+  posts: [
+    { id: "shack", title: "The Shack", slug: "the-shack", basePricePerNight: 1500 },
+    { id: "cottage", title: "The Cottage", slug: "the-cottage", basePricePerNight: 1200 }
+  ],
+  packages: [
+    { id: "shack_stack", propertyId: "shack", price: 8500, name: "Three nights - The Shack", description: "Three night stack booking at the beautiful Llandudno Shack." },
+    { id: "book_an_entire_week", propertyId: "shack", price: 18000, name: "A week at The Shack", description: "Enjoy a full seven-day retreat at The Shack." },
+    { id: "long_weekend_at_the_Cottage", propertyId: "cottage", price: 9500, name: "Three nights - The Cottage", description: "A cozy 3-night weekend getaway at Llandudno Cottage." },
+    { id: "entire_week_at_the_cottage", propertyId: "cottage", price: 20000, name: "Seven nights - The Cottage", description: "A full week of peace and relaxation at Llandudno Cottage." }
+  ],
+  bookings: []
+};
+
+// Read local JSON database
+function readMockDb(): any {
+  try {
+    if (fs.existsSync(MOCK_DB_PATH)) {
+      const content = fs.readFileSync(MOCK_DB_PATH, "utf8");
+      return JSON.parse(content);
+    }
+  } catch (err: any) {
+    console.error("[Mock DB] Failed to read db-mock.json:", err.message);
+  }
+  // Initialize file if not present
+  writeMockDb(DEFAULT_MOCK_DATA);
+  return DEFAULT_MOCK_DATA;
+}
+
+// Write local JSON database
+function writeMockDb(data: any) {
+  try {
+    fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(data, null, 2), "utf8");
+  } catch (err: any) {
+    console.error("[Mock DB] Failed to write to db-mock.json:", err.message);
+  }
+}
+
+export function getFirestore(): any {
+  if (isMockMode) return null;
+
+  if (!app) {
+    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!raw) {
+      console.warn("⚠️ FIREBASE_SERVICE_ACCOUNT_JSON is not set. Operating in MOCK MODE (db-mock.json).");
+      isMockMode = true;
+      return null;
+    }
+
+    const trimmed = raw.trim();
+    let credentials;
+    try {
+      credentials = JSON.parse(trimmed);
+    } catch (err: any) {
+      console.error("❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON. Falling back to MOCK MODE.", err.message);
+      isMockMode = true;
+      return null;
+    }
+
+    try {
+      if ((admin as any).apps?.length > 0) {
+        app = (admin as any).apps[0] || undefined;
+      } else {
+        app = admin.initializeApp({
+          credential: (admin as any).credential.cert(credentials),
+          projectId: credentials.project_id,
+        });
+      }
+      cachedProjectId = credentials.project_id || null;
+    } catch (err: any) {
+      console.error("❌ Failed to initialize Firebase Admin SDK. Falling back to MOCK MODE.", err.message);
+      isMockMode = true;
+      return null;
+    }
+  }
+  return (admin as any).firestore();
+}
+
+export function getProjectId(): string {
+  getFirestore();
+  if (isMockMode) return "mock-project-id";
+  return cachedProjectId || "shack-30405";
+}
+
+// ==========================================
+// PROPERTIES / POSTS CRUD
+// ==========================================
+
+export async function createProperty(data: { id?: string; title: string; slug: string; basePricePerNight: number }): Promise<any> {
+  const db = getFirestore();
+  const id = data.id || data.slug.trim().toLowerCase();
+  const propertyRecord = { ...data, id };
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    // Overwrite if exists, otherwise push
+    const index = dbData.posts.findIndex((p: any) => p.id === id);
+    if (index >= 0) {
+      dbData.posts[index] = propertyRecord;
+    } else {
+      dbData.posts.push(propertyRecord);
+    }
+    writeMockDb(dbData);
+    return propertyRecord;
+  }
+
+  await db.collection("posts").doc(id).set(propertyRecord);
+  return propertyRecord;
+}
+
+export async function listProperties(): Promise<any[]> {
+  const db = getFirestore();
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    return dbData.posts;
+  }
+
+  try {
+    const snap = await db.collection("posts").get();
+    return snap.docs.map((doc: any) => doc.data());
+  } catch (err) {
+    console.error("[Firebase] listProperties error:", err);
+    return readMockDb().posts;
+  }
+}
+
+export async function getProperty(idOrSlug: string): Promise<any> {
+  const db = getFirestore();
+  const target = idOrSlug.trim();
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    return dbData.posts.find((p: any) => p.id === target || p.slug === target) || null;
+  }
+
+  try {
+    // Try by ID first
+    let doc = await db.collection("posts").doc(target).get();
+    if (doc.exists) return doc.data();
+
+    // If not found, query by slug
+    const snap = await db.collection("posts").where("slug", "==", target).limit(1).get();
+    if (!snap.empty) return snap.docs[0].data();
+  } catch (err) {
+    console.warn(`[Firebase] Failed to query property "${target}":`, err);
+  }
+
+  return null;
+}
+
+// ==========================================
+// PACKAGES CRUD
+// ==========================================
+
+export async function createPackage(data: { id?: string; propertyId: string; name: string; price: number; description: string; multiplier?: number; baseRate?: number; yocoId?: string; category?: string; isEnabled?: boolean }): Promise<any> {
+  const db = getFirestore();
+  const id = data.id || `pkg_${Math.random().toString(36).substring(2, 11)}`;
+  
+  // Format for Yoco & Firebase compatibility
+  const packageRecord = {
+    multiplier: 1.0,
+    baseRate: 0,
+    yocoId: id,
+    category: "standard",
+    isEnabled: true,
+    ...data,
+    id
+  };
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    const index = dbData.packages.findIndex((p: any) => p.id === id);
+    if (index >= 0) {
+      dbData.packages[index] = packageRecord;
+    } else {
+      dbData.packages.push(packageRecord);
+    }
+    writeMockDb(dbData);
+    return packageRecord;
+  }
+
+  await db.collection("packages").doc(id).set(packageRecord);
+  return packageRecord;
+}
+
+export async function getPackage(type: string): Promise<any> {
+  const db = getFirestore();
+  
+  if (isMockMode || !db) {
+    const cleanType = type.trim();
+    const dbData = readMockDb();
+    return dbData.packages.find((p: any) => p.id === cleanType) || null;
+  }
+
+  const candidates: string[] = [];
+  if (typeof type === "string") {
+    const trimmed = type.trim();
+    candidates.push(type, trimmed, ` ${trimmed}`);
+  } else if (type != null) {
+    candidates.push(String(type));
+  }
+
+  const seen = new Set<string>();
+  for (const id of candidates) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    try {
+      const doc = await db.collection("packages").doc(id).get();
+      if (doc.exists) return doc.data();
+    } catch (err) {
+      console.warn(`[Firebase] Failed to query package ID "${id}":`, err);
+    }
+  }
+
+  return null;
+}
+
+export async function listPackages(propertyId?: string): Promise<any[]> {
+  const db = getFirestore();
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    if (propertyId) {
+      return dbData.packages.filter((p: any) => p.propertyId === propertyId);
+    }
+    return dbData.packages;
+  }
+
+  try {
+    let query: any = db.collection("packages");
+    if (propertyId) {
+      query = query.where("propertyId", "==", propertyId);
+    }
+    const snap = await query.get();
+    return snap.docs.map((doc: any) => doc.data());
+  } catch (err) {
+    console.error("[Firebase] listPackages error:", err);
+    const mockPkgs = readMockDb().packages;
+    if (propertyId) {
+      return mockPkgs.filter((p: any) => p.propertyId === propertyId);
+    }
+    return mockPkgs;
+  }
+}
+
+export async function listPackageDocIds(limit = 10): Promise<string[]> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    return dbData.packages.map((p: any) => p.id).slice(0, limit);
+  }
+
+  try {
+    const snap = await db.collection("packages").limit(limit).get();
+    return snap.docs.map((d: any) => d.id);
+  } catch (err) {
+    console.error("[Firebase] listPackageDocIds error:", err);
+    return readMockDb().packages.map((p: any) => p.id).slice(0, limit);
+  }
+}
+
+// ==========================================
+// BOOKINGS CRUD
+// ==========================================
+
+export async function createBooking(data: { propertyId: string; packageId: string | null; customerName: string; customerEmail: string; fromDate: string; toDate: string; total: number; paymentStatus?: string }): Promise<any> {
+  const db = getFirestore();
+  const id = `bk_${Math.random().toString(36).substring(2, 11)}`;
+  const bookingRecord = {
+    paymentStatus: "pending",
+    token: Math.random().toString(36).substring(2, 15),
+    ...data,
+    id
+  };
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.bookings.push(bookingRecord);
+    writeMockDb(dbData);
+    return bookingRecord;
+  }
+
+  await db.collection("bookings").doc(id).set(bookingRecord);
+  return bookingRecord;
+}
+
+export async function listBookings(propertyId?: string): Promise<any[]> {
+  const db = getFirestore();
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    if (propertyId) {
+      return dbData.bookings.filter((b: any) => b.propertyId === propertyId);
+    }
+    return dbData.bookings;
+  }
+
+  try {
+    let query: any = db.collection("bookings");
+    if (propertyId) {
+      query = query.where("propertyId", "==", propertyId);
+    }
+    const snap = await query.get();
+    return snap.docs.map((doc: any) => doc.data());
+  } catch (err) {
+    console.error("[Firebase] listBookings error:", err);
+    const mockBks = readMockDb().bookings;
+    if (propertyId) {
+      return mockBks.filter((b: any) => b.propertyId === propertyId);
+    }
+    return mockBks;
+  }
+}
+
+export async function saveUserDates(uid: string, fromDate: string, toDate: string): Promise<any> {
+  const db = getFirestore();
+  const dateRecord = { fromDate, toDate };
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.userDates = dbData.userDates || {};
+    dbData.userDates[uid] = dateRecord;
+    writeMockDb(dbData);
+    return dateRecord;
+  }
+
+  await db.collection("users").doc(uid).set(dateRecord, { merge: true });
+  return dateRecord;
+}
+
+export async function getUserDates(uid: string): Promise<any | null> {
+  const db = getFirestore();
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.userDates = dbData.userDates || {};
+    return dbData.userDates[uid] || null;
+  }
+
+  try {
+    const doc = await db.collection("users").doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data?.fromDate && data?.toDate) {
+        return { fromDate: data.fromDate, toDate: data.toDate };
+      }
+    }
+  } catch (err) {
+    console.error("[Firebase] getUserDates error:", err);
+  }
+  return null;
+}

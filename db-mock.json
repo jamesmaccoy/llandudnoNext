@@ -38,6 +38,18 @@
       "name": "Standard Package",
       "price": 4000,
       "description": "Includes standard stay features."
+    },
+    {
+      "multiplier": 1,
+      "baseRate": 0,
+      "yocoId": "fdsfdsf",
+      "category": "standard",
+      "isEnabled": true,
+      "id": "fdsfdsf",
+      "propertyId": "shack",
+      "name": "fdsfdsf",
+      "price": 3443,
+      "description": ""
     }
   ],
   "bookings": [

@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { initializeApp, cert, getApps } from "firebase-admin";
+import { getFirestore as getFirestoreAdmin } from "firebase-admin/firestore";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -6,7 +7,9 @@ let app: any;
 let cachedProjectId: string | null = null;
 let isMockMode = false;
 
-const MOCK_DB_PATH = path.join(process.cwd(), "db-mock.json");
+const MOCK_DB_PATH = process.env.VERCEL
+  ? path.join("/tmp", "db-mock.json")
+  : path.join(process.cwd(), "db-mock.json");
 
 // Default initial data for mock DB
 const DEFAULT_MOCK_DATA = {
@@ -76,11 +79,12 @@ export function getFirestore(): any {
     }
 
     try {
-      if ((admin as any).apps?.length > 0) {
-        app = (admin as any).apps[0] || undefined;
+      const activeApps = getApps();
+      if (activeApps.length > 0) {
+        app = activeApps[0];
       } else {
-        app = admin.initializeApp({
-          credential: (admin as any).credential.cert(credentials),
+        app = initializeApp({
+          credential: cert(credentials),
           projectId: credentials.project_id,
         });
       }
@@ -91,7 +95,7 @@ export function getFirestore(): any {
       return null;
     }
   }
-  return (admin as any).firestore();
+  return getFirestoreAdmin();
 }
 
 export function getProjectId(): string {

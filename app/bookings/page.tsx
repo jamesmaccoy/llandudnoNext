@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, AuthProvider } from "@/components/auth";
 import Link from "next/link";
 import CalendarPicker from "@/components/CalendarPicker";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface Property {
   id: string;
@@ -134,8 +135,8 @@ function BookingsCheckoutContent() {
     });
 
     if (conflict) {
-      const startStr = new Date(conflict.fromDate).toLocaleDateString();
-      const endStr = new Date(conflict.toDate).toLocaleDateString();
+      const startStr = formatDisplayDate(conflict.fromDate);
+      const endStr = formatDisplayDate(conflict.toDate);
       setDateConflict(`Dates overlap with an existing booking (${startStr} - ${endStr}) by ${conflict.customerName}`);
     } else {
       setDateConflict(null);
@@ -336,7 +337,7 @@ function BookingsCheckoutContent() {
               <div className="rounded-2xl bg-black/40 p-4 border border-white/5">
                 <span className="text-[10px] text-zinc-500 uppercase block">Booking Dates</span>
                 <span className="text-sm font-extrabold text-white mt-1 block">
-                  {from.toLocaleDateString()} - {to.toLocaleDateString()}
+                  {formatDisplayDate(from)} - {formatDisplayDate(to)}
                 </span>
                 <span className="text-[10px] text-zinc-500 font-mono">{nights} night(s) stay</span>
               </div>
@@ -479,8 +480,8 @@ function BookingsCheckoutContent() {
               </thead>
               <tbody className="divide-y divide-white/5 text-zinc-300">
                 {bookingsList.map((b) => {
-                  const checkIn = new Date(b.fromDate).toLocaleDateString();
-                  const checkOut = new Date(b.toDate).toLocaleDateString();
+                  const checkIn = formatDisplayDate(b.fromDate);
+                  const checkOut = formatDisplayDate(b.toDate);
 
                   return (
                     <tr key={b.id} className="hover:bg-white/5 transition-all">

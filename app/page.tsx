@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AuthProvider, useAuth, AuthCard } from "@/components/auth";
 import Link from "next/link";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface Property {
   id: string;
@@ -246,7 +247,7 @@ function HomePageContent() {
             </div>
 
             <div className="text-[11px] text-zinc-400">
-              Selected Check-out: <strong className="text-white">{toDate ? new Date(toDate).toLocaleDateString() : "-"}</strong>
+              Selected Check-out: <strong className="text-white">{toDate ? formatDisplayDate(toDate) : "-"}</strong>
             </div>
 
             {saveStatus && (
@@ -310,7 +311,7 @@ function HomePageContent() {
                       
                       {datesLocked && (
                         <div className="mt-4 rounded-xl bg-teal-500/5 border border-teal-500/10 p-3 text-[11px] text-teal-300">
-                          📅 Selected: <strong className="text-white">{new Date(savedDates.fromDate).toLocaleDateString()}</strong> to <strong className="text-white">{new Date(savedDates.toDate).toLocaleDateString()}</strong>
+                          📅 Selected: <strong className="text-white">{formatDisplayDate(savedDates.fromDate)}</strong> to <strong className="text-white">{formatDisplayDate(savedDates.toDate)}</strong>
                         </div>
                       )}
                     </div>

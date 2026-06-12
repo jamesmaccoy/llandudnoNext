@@ -4,6 +4,7 @@ import React, { useState, useEffect, use, Suspense } from "react";
 import Link from "next/link";
 import { useAuth, AuthProvider } from "@/components/auth";
 import CalendarPicker from "@/components/CalendarPicker";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface Property {
   id: string;
@@ -276,7 +277,7 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
                   <div className="flex justify-between text-xs text-zinc-300">
                     <span>Selected Range:</span>
                     <span className="font-bold text-white">
-                      {new Date(savedDates!.fromDate).toLocaleDateString()} - {new Date(savedDates!.toDate).toLocaleDateString()}
+                      {formatDisplayDate(savedDates!.fromDate)} - {formatDisplayDate(savedDates!.toDate)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-zinc-300">

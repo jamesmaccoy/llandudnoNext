@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface Property {
   id: string;
@@ -8,6 +9,7 @@ interface Property {
   slug: string;
   basePricePerNight: number;
 }
+
 
 interface PackageData {
   id: string;
@@ -145,8 +147,8 @@ export default function SmartEstimateBlock({
     });
 
     if (conflict) {
-      const startStr = new Date(conflict.fromDate).toLocaleDateString();
-      const endStr = new Date(conflict.toDate).toLocaleDateString();
+      const startStr = formatDisplayDate(conflict.fromDate);
+      const endStr = formatDisplayDate(conflict.toDate);
       setDateConflict(`Conflict detected with existing booking (${startStr} - ${endStr}) by ${conflict.customerName}`);
     } else {
       setDateConflict(null);

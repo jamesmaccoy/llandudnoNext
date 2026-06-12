@@ -5,6 +5,7 @@ old
 new
 .DS_Store
 .env
+.env.local
 .next
 .vercel
 

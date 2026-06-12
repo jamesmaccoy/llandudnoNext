@@ -4,7 +4,6 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AuthProvider, useAuth, AuthCard } from "@/components/auth";
 import Link from "next/link";
-import CalendarPicker from "@/components/CalendarPicker";
 
 interface Property {
   id: string;
@@ -33,7 +32,7 @@ function HomePageContent() {
   const [isSavingDates, setIsSavingDates] = useState(false);
   const [savedDates, setSavedDates] = useState<{ fromDate: string; toDate: string } | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [nights, setNights] = useState<number>(3);
 
   // Load properties
   useEffect(() => {
@@ -53,23 +52,7 @@ function HomePageContent() {
     fetchProperties();
   }, []);
 
-  // Fetch bookings to display in CalendarPicker
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const res = await fetch("/api/bookings");
-        const result = await res.json();
-        if (result.success && result.data) {
-          setBookings(result.data);
-        }
-      } catch (err) {
-        console.error("Failed to load bookings for calendar picker:", err);
-      }
-    };
-    fetchBookings();
-  }, []);
-
-  // Fetch saved dates if user is logged in
+  // Load properties
   useEffect(() => {
     if (authLoading || !user) {
       setSavedDates(null);
@@ -82,9 +65,18 @@ function HomePageContent() {
         const result = await res.json();
         if (result.success && result.data) {
           setSavedDates(result.data);
-          // Set inputs to match saved profile dates
-          setFromDate(result.data.fromDate.split("T")[0]);
-          setToDate(result.data.toDate.split("T")[0]);
+          const startStr = result.data.fromDate.split("T")[0];
+          const endStr = result.data.toDate.split("T")[0];
+          setFromDate(startStr);
+          setToDate(endStr);
+          
+          // Compute nights
+          const start = new Date(startStr);
+          const end = new Date(endStr);
+          if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            const diff = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+            setNights(diff);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch saved user dates:", err);
@@ -215,15 +207,47 @@ function HomePageContent() {
               Define check-in and check-out ranges. Dates must be persistent to user profiles before package selection is enabled.
             </p>
 
-            <CalendarPicker
-              selectedFromDate={fromDate}
-              selectedToDate={toDate}
-              bookings={bookings}
-              onChange={(start, end) => {
-                setFromDate(start);
-                setToDate(end);
-              }}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Check-in Date</label>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    const d = new Date(e.target.value);
+                    if (!isNaN(d.getTime())) {
+                      d.setDate(d.getDate() + nights);
+                      setToDate(d.toISOString().split("T")[0]);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Nights of Stay</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={nights}
+                  onChange={(e) => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    setNights(val);
+                    const d = new Date(fromDate);
+                    if (!isNaN(d.getTime())) {
+                      d.setDate(d.getDate() + val);
+                      setToDate(d.toISOString().split("T")[0]);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="text-[11px] text-zinc-400">
+              Selected Check-out: <strong className="text-white">{toDate ? new Date(toDate).toLocaleDateString() : "-"}</strong>
+            </div>
 
             {saveStatus && (
               <div className="text-center text-[10px] font-bold text-zinc-300 bg-white/5 py-2.5 rounded-xl border border-white/5 animate-pulse">

@@ -166,7 +166,7 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
           href="/"
           className="mt-6 inline-block w-full rounded-xl bg-teal-500 py-3 text-center text-xs font-bold text-white hover:bg-teal-600 transition-all"
         >
-          Return to Portal
+          Return to Listings
         </Link>
       </div>
     );

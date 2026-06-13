@@ -48,6 +48,7 @@ function BookingsCheckoutContent() {
 
   // Page States
   const [property, setProperty] = useState<Property | null>(null);
+  const [propertiesList, setPropertiesList] = useState<Property[]>([]);
   const [savedDates, setSavedDates] = useState<{ fromDate: string; toDate: string } | null>(null);
   const [packages, setPackages] = useState<PackageData[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
@@ -58,41 +59,56 @@ function BookingsCheckoutContent() {
   const [dateConflict, setDateConflict] = useState<string | null>(null);
   const [bookingsList, setBookingsList] = useState<Booking[]>([]);
 
+  // Admin and filter mode states
+  const [viewMode, setViewMode] = useState<"my" | "all">("my");
+
   // Load property, user dates, and packages
   useEffect(() => {
-    if (!propertyId) {
-      setIsLoading(false);
-      return;
-    }
-
     const loadPageData = async () => {
       try {
-        // 1. Fetch Property details
+        // 1. Fetch all properties to resolve property ID -> Title
         const propRes = await fetch("/api/posts");
         const propResult = await propRes.json();
+        let fetchedProps: Property[] = [];
         if (propResult.success && propResult.data) {
-          const found = propResult.data.find((p: Property) => p.id === propertyId);
-          if (found) setProperty(found);
+          setPropertiesList(propResult.data);
+          fetchedProps = propResult.data;
         }
 
-        // 2. Fetch Packages for this property
-        const pkgRes = await fetch(`/api/packages?propertyId=${propertyId}`);
-        const pkgResult = await pkgRes.json();
-        if (pkgResult.success && pkgResult.data) {
-          setPackages(pkgResult.data);
-          if (pkgResult.data.length > 0) {
-            setSelectedPackageId(pkgResult.data[0].id);
+        if (propertyId) {
+          const found = fetchedProps.find((p: Property) => p.id === propertyId);
+          if (found) setProperty(found);
+
+          // 2. Fetch Packages for this property
+          const pkgRes = await fetch(`/api/packages?propertyId=${propertyId}`);
+          const pkgResult = await pkgRes.json();
+          if (pkgResult.success && pkgResult.data) {
+            setPackages(pkgResult.data);
+            if (pkgResult.data.length > 0) {
+              setSelectedPackageId(pkgResult.data[0].id);
+            }
+          }
+
+          // 3. Fetch Bookings for history list
+          const bksRes = await fetch(`/api/bookings?propertyId=${propertyId}`);
+          const bksResult = await bksRes.json();
+          if (bksResult.success && bksResult.data) {
+            setBookingsList(bksResult.data);
+          }
+        } else {
+          // Fetch all bookings for dashboard display
+          const bksRes = await fetch("/api/bookings");
+          const bksResult = await bksRes.json();
+          if (bksResult.success && bksResult.data) {
+            setBookingsList(bksResult.data);
           }
         }
-
-        // 3. Fetch Bookings for history list
-        const bksRes = await fetch(`/api/bookings?propertyId=${propertyId}`);
-        const bksResult = await bksRes.json();
-        if (bksResult.success && bksResult.data) {
-          setBookingsList(bksResult.data);
-        }
       } catch (err) {
-        console.error("Failed to load checkout details:", err);
+        console.error("Failed to load page data:", err);
+      } finally {
+        if (!propertyId) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -101,7 +117,12 @@ function BookingsCheckoutContent() {
 
   // Load saved dates for logged-in user
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading) return;
+    
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     const fetchUserDates = async () => {
       try {
@@ -159,20 +180,22 @@ function BookingsCheckoutContent() {
         <span className="text-3xl">🔑</span>
         <h3 className="text-lg font-bold text-white mt-4">Authentication Required</h3>
         <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-          You must be logged in and have selected stay dates before checking out a package.
+          {propertyId 
+            ? "You must be logged in and have selected stay dates before checking out a package." 
+            : "You must be logged in to view your stays."}
         </p>
         <Link
           href="/"
           className="mt-6 inline-block w-full rounded-xl bg-teal-500 py-3 text-center text-xs font-bold text-white hover:bg-teal-600 transition-all"
         >
-          Go to Homepage Login & Date Picker
+          {propertyId ? "Go to Homepage Login & Date Picker" : "Go to Homepage to Login"}
         </Link>
       </div>
     );
   }
 
-  // 2. Dates not selected state
-  if (!savedDates) {
+  // 2. Dates not selected state (Only during checkout flow)
+  if (propertyId && !savedDates) {
     return (
       <div className="max-w-md mx-auto my-20 p-8 rounded-3xl border border-white/10 bg-white/5 text-center">
         <span className="text-3xl">📅</span>
@@ -191,9 +214,9 @@ function BookingsCheckoutContent() {
   }
 
   // Calculate stay duration
-  const from = new Date(savedDates.fromDate);
-  const to = new Date(savedDates.toDate);
-  const nights = Math.max(1, Math.ceil(Math.abs(to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)));
+  const from = savedDates ? new Date(savedDates.fromDate) : new Date();
+  const to = savedDates ? new Date(savedDates.toDate) : new Date();
+  const nights = savedDates ? Math.max(1, Math.ceil(Math.abs(to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   const basePricePerNight = property ? property.basePricePerNight : 1500;
   const selectedPackage = packages.find(p => p.id === selectedPackageId);
@@ -302,6 +325,187 @@ function BookingsCheckoutContent() {
       setIsSubmitting(false);
     }
   };
+
+  if (!propertyId) {
+    const displayBookings = bookingsList.filter((b) => {
+      if (viewMode === "my") {
+        return b.customerEmail?.toLowerCase() === user.email?.toLowerCase();
+      }
+      return true;
+    });
+
+    const getCountdownLabel = (b: Booking) => {
+      if (b.paymentStatus === "failed" || b.paymentStatus === "cancelled" || b.paymentStatus === "refunded") {
+        return { text: "No active reservation", class: "text-zinc-500 bg-zinc-950/40 border border-zinc-800" };
+      }
+
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const start = new Date(b.fromDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(b.toDate);
+      end.setHours(0, 0, 0, 0);
+
+      if (now > end) {
+        return { text: "Completed stay", class: "text-zinc-400 bg-zinc-950/40 border border-zinc-900" };
+      } else if (now >= start && now <= end) {
+        return { text: "Active Now 🟢", class: "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 animate-pulse font-bold" };
+      } else {
+        const diffTime = start.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          return { text: "Starts tomorrow 📅", class: "text-teal-400 bg-teal-500/10 border border-teal-500/20 font-bold" };
+        }
+        return { text: `Starts in ${diffDays} days`, class: "text-zinc-300 bg-white/5 border border-white/10" };
+      }
+    };
+
+    return (
+      <div className="relative max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+          <div className="absolute -top-[10%] left-[20%] w-[60%] h-[60%] rounded-full bg-teal-500/10 blur-[120px]" />
+        </div>
+
+        <header className="mb-10 border-b border-white/10 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-[10px] text-teal-400 font-extrabold uppercase tracking-wide">Account Stays</span>
+            <h1 className="text-3xl font-black text-white mt-1">My Bookings Dashboard</h1>
+          </div>
+          <Link
+            href="/"
+            className="text-xs text-zinc-400 hover:text-white transition-colors"
+          >
+            ← View Destination Properties
+          </Link>
+        </header>
+
+        {user?.isAdmin && (
+          <div className="flex border-b border-white/5 mb-8">
+            <button
+              onClick={() => setViewMode("my")}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+                viewMode === "my"
+                  ? "border-teal-500 text-teal-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              My Bookings
+            </button>
+            <button
+              onClick={() => setViewMode("all")}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+                viewMode === "all"
+                  ? "border-teal-500 text-teal-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              All System Bookings (Admin)
+            </button>
+          </div>
+        )}
+
+        {displayBookings.length === 0 ? (
+          <div className="text-center py-20 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md">
+            <span className="text-4xl">🧳</span>
+            <h3 className="text-lg font-bold text-white mt-4">No Stays Found</h3>
+            <p className="text-xs text-zinc-400 mt-2 max-w-sm mx-auto leading-relaxed">
+              {viewMode === "my"
+                ? "You haven't reserved any stays yet. Visit the homepage to choose a property and dates."
+                : "No bookings recorded in the system ledger yet."}
+            </p>
+            {viewMode === "my" && (
+              <Link
+                href="/"
+                className="mt-6 inline-block rounded-xl bg-teal-500 px-6 py-2.5 text-xs font-bold text-white hover:bg-teal-600 transition-all shadow-md shadow-teal-500/10"
+              >
+                Explore Properties
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {displayBookings.map((b) => {
+              const checkIn = formatDisplayDate(b.fromDate);
+              const checkOut = formatDisplayDate(b.toDate);
+              const stayNights = Math.max(1, Math.ceil(Math.abs(new Date(b.toDate).getTime() - new Date(b.fromDate).getTime()) / (1000 * 60 * 60 * 24)));
+              const propName = propertiesList.find((p) => p.id === b.propertyId)?.title || b.propertyId;
+              const countdown = getCountdownLabel(b);
+
+              return (
+                <div
+                  key={b.id}
+                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-zinc-900/60 p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between shadow-xl"
+                >
+                  <div className="absolute -right-10 -top-10 w-24 h-24 rounded-full bg-teal-500/5 blur-xl group-hover:bg-teal-500/10 transition-all pointer-events-none" />
+
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <span className="inline-block rounded bg-teal-500/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-400">
+                          {b.propertyId === "shack" ? "Beach Shack" : b.propertyId === "cottage" ? "Cozy Cottage" : "Luxury Villa"}
+                        </span>
+                        <h3 className="text-lg font-black text-white mt-1 group-hover:text-teal-400 transition-colors">
+                          {propName}
+                        </h3>
+                        <span className="text-[9px] font-mono text-zinc-500 block mt-0.5">Ref: {b.id}</span>
+                      </div>
+                      
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide border ${
+                          b.paymentStatus === "paid" || b.paymentStatus === "success"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                            : b.paymentStatus === "failed"
+                            ? "bg-red-500/10 text-red-400 border-red-500/25"
+                            : "bg-orange-500/10 text-orange-400 border-orange-500/25"
+                        }`}
+                      >
+                        {b.paymentStatus}
+                      </span>
+                    </div>
+
+                    <div className="flex">
+                      <span className={`rounded-lg px-2.5 py-1 text-[10px] font-medium tracking-wide ${countdown.class}`}>
+                        {countdown.text}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 rounded-2xl bg-black/40 p-4 border border-white/5 text-xs">
+                      <div>
+                        <span className="text-[10px] text-zinc-500 uppercase block">Check-in</span>
+                        <span className="font-bold text-white mt-1 block">{checkIn}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-zinc-500 uppercase block">Check-out</span>
+                        <span className="font-bold text-white mt-1 block">{checkOut}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 border-t border-white/5 pt-4 flex items-center justify-between text-xs">
+                    <div>
+                      {viewMode === "all" && (
+                        <div className="text-[10px] text-zinc-400 mb-1">
+                          Guest: <strong className="text-white">{b.customerName}</strong> <span className="text-zinc-500 font-mono text-[9px]">({b.customerEmail})</span>
+                        </div>
+                      )}
+                      <span className="text-[10px] text-zinc-500 uppercase">Duration</span>
+                      <span className="font-bold text-white block mt-0.5">{stayNights} night(s) stay</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-zinc-500 uppercase">Paid Total</span>
+                      <span className="text-lg font-black text-teal-400 block mt-0.5">
+                        R {b.total ? b.total.toLocaleString() : "0"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="relative max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
@@ -423,8 +627,8 @@ function BookingsCheckoutContent() {
                     Select an available date range on the calendar below to update your stay dates:
                   </p>
                   <CalendarPicker
-                    selectedFromDate={savedDates.fromDate.split("T")[0]}
-                    selectedToDate={savedDates.toDate.split("T")[0]}
+                    selectedFromDate={savedDates?.fromDate.split("T")[0] || ""}
+                    selectedToDate={savedDates?.toDate.split("T")[0] || ""}
                     bookings={bookingsList}
                     onChange={handleUpdateDates}
                   />

@@ -18,8 +18,8 @@ export default function NavHeader() {
 
         {/* Nav Links */}
         <nav className="flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-zinc-400">
-          <Link href="/" className="hover:text-white transition-colors">
-            Portal
+          <Link href="/bookings" className="hover:text-white transition-colors">
+            Bookings
           </Link>
           {user?.isAdmin && (
             <>

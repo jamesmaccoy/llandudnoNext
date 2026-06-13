@@ -337,6 +337,35 @@ export async function listBookings(propertyId?: string): Promise<any[]> {
   }
 }
 
+export async function updateBookingStatus(id: string, paymentStatus: string): Promise<boolean> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    const index = dbData.bookings.findIndex((b: any) => b.id === id);
+    if (index >= 0) {
+      dbData.bookings[index].paymentStatus = paymentStatus;
+      writeMockDb(dbData);
+      return true;
+    }
+    return false;
+  }
+  try {
+    await db.collection("bookings").doc(id).update({ paymentStatus });
+    return true;
+  } catch (err) {
+    console.error(`[Firebase] updateBookingStatus error for id ${id}:`, err);
+    // Fallback locally
+    const dbData = readMockDb();
+    const index = dbData.bookings.findIndex((b: any) => b.id === id);
+    if (index >= 0) {
+      dbData.bookings[index].paymentStatus = paymentStatus;
+      writeMockDb(dbData);
+      return true;
+    }
+    return false;
+  }
+}
+
 export async function saveUserDates(uid: string, fromDate: string, toDate: string): Promise<any> {
   const db = getFirestore();
   const dateRecord = { fromDate, toDate };

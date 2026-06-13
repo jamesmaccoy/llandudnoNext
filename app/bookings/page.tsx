@@ -6,6 +6,7 @@ import { useAuth, AuthProvider } from "@/components/auth";
 import Link from "next/link";
 import CalendarPicker from "@/components/CalendarPicker";
 import { formatDisplayDate } from "@/lib/utils";
+import Script from "next/script";
 
 interface Property {
   id: string;
@@ -61,6 +62,42 @@ function BookingsCheckoutContent() {
 
   // Admin and filter mode states
   const [viewMode, setViewMode] = useState<"my" | "all">("my");
+
+  // Yoco Inline SDK state
+  const [yocoSDK, setYocoSDK] = useState<any>(null);
+
+  // Initialize Yoco Inline SDK when script is loaded
+  useEffect(() => {
+    if (!propertyId) return;
+
+    const initYoco = async () => {
+      try {
+        const res = await fetch("/api/v1/yoco-config");
+        const data = await res.json();
+        // @ts-ignore
+        if (window.YocoSDK) {
+          // @ts-ignore
+          const sdk = new window.YocoSDK({
+            publicKey: data.publicKey
+          });
+          setYocoSDK(sdk);
+        }
+      } catch (err) {
+        console.error("Failed to fetch Yoco public key or initialize SDK:", err);
+      }
+    };
+
+    // Poll for Yoco SDK to be loaded on window object
+    const interval = setInterval(() => {
+      // @ts-ignore
+      if (window.YocoSDK) {
+        clearInterval(interval);
+        initYoco();
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [propertyId]);
 
   // Load property, user dates, and packages
   useEffect(() => {
@@ -294,31 +331,93 @@ function BookingsCheckoutContent() {
       setCheckoutLog(prev => [
         ...prev,
         "3. ✅ Booking logged successfully. Preparing payment details...",
-        "4. Generating secure Yoco Checkout redirect URL..."
       ]);
 
-      const targetType = selectedPackage ? selectedPackage.yocoId : "shack_stack";
+      if (!yocoSDK) {
+        // Fallback: Use standard redirect checkout flow (e.g. mock redirect checkout if keys are missing)
+        setCheckoutLog(prev => [
+          ...prev,
+          "⚠️ Yoco Inline SDK not initialized. Falling back to checkout redirect flow...",
+        ]);
 
-      // POST create link
-      const linkRes = await fetch("/api/v1/generate_checkout_link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: targetType })
-      });
+        const targetType = selectedPackage ? selectedPackage.yocoId : "shack_stack";
 
-      const linkResult = await linkRes.json();
-      if (!linkRes.ok || !linkResult.status) {
-        throw new Error(linkResult.data || "Redirect link generation failed.");
+        // POST create link
+        const linkRes = await fetch("/api/v1/generate_checkout_link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: targetType })
+        });
+
+        const linkResult = await linkRes.json();
+        if (!linkRes.ok || !linkResult.status) {
+          throw new Error(linkResult.data || "Redirect link generation failed.");
+        }
+
+        setCheckoutLog(prev => [
+          ...prev,
+          "5. ✅ Redirecting to Checkout Gateway..."
+        ]);
+
+        setTimeout(() => {
+          window.location.href = linkResult.data.redirectUrl;
+        }, 1200);
+        return;
       }
 
       setCheckoutLog(prev => [
         ...prev,
-        "5. ✅ Redirecting to Yoco Checkout Gateway..."
+        "4. Launching secure Yoco payment popup..."
       ]);
 
-      setTimeout(() => {
-        window.location.href = linkResult.data.redirectUrl;
-      }, 1200);
+      // @ts-ignore
+      yocoSDK.showPopup({
+        amountInCents: Math.round(finalTotal * 100),
+        currency: 'ZAR',
+        name: 'Llandudno Stays',
+        description: selectedPackage ? selectedPackage.name : 'Stay Booking',
+        callback: async function (result: any) {
+          if (result.error) {
+            setCheckoutLog(prev => [...prev, `❌ Payment failed: ${result.error.message}`]);
+            setIsSubmitting(false);
+          } else {
+            setCheckoutLog(prev => [
+              ...prev,
+              "5. ✅ Card token generated. Processing payment charge...",
+            ]);
+            
+            try {
+              // Send token to backend to execute charge
+              const chargeRes = await fetch("/api/v1/charge", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  token: result.id,
+                  amountInCents: Math.round(finalTotal * 100),
+                  bookingId: bookResult.booking.id
+                })
+              });
+              
+              const chargeResult = await chargeRes.json();
+              if (!chargeRes.ok || !chargeResult.success) {
+                throw new Error(chargeResult.error || "Payment charge failed.");
+              }
+              
+              setCheckoutLog(prev => [
+                ...prev,
+                "6. ✅ Payment captured successfully! Redirecting...",
+              ]);
+              
+              setTimeout(() => {
+                router.push(`/?payment=success&type=${selectedPackage ? selectedPackage.id : "stay"}&amount=${finalTotal}`);
+              }, 1500);
+            } catch (chargeErr: any) {
+              setCheckoutLog(prev => [...prev, `❌ Error: ${chargeErr.message}`]);
+              setIsSubmitting(false);
+            }
+          }
+        }
+      });
 
     } catch (err: any) {
       setCheckoutLog(prev => [...prev, `❌ Error: ${err.message}`]);
@@ -508,7 +607,9 @@ function BookingsCheckoutContent() {
   }
 
   return (
-    <div className="relative max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+    <>
+      <Script src="https://js.yoco.com/sdk/v1/yoco.js" strategy="lazyOnload" />
+      <div className="relative max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
       {/* Page Header */}
       <header className="mb-10 border-b border-white/10 pb-6 flex items-center justify-between">
         <div>
@@ -721,7 +822,8 @@ function BookingsCheckoutContent() {
         )}
       </div>
     </div>
-  );
+  </>
+);
 }
 
 export default function BookingsCheckoutPage() {

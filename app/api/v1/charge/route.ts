@@ -13,7 +13,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const secretKey = process.env.YOCO_SECRET_KEY || process.env.TEST_YOCO_SEC;
+    const secretKey = 
+      process.env.YOCO_SECRET_KEY || 
+      process.env.LIVE_YOCO_SEC || 
+      process.env.TEST_YOCO_SEC;
 
     if (!secretKey) {
       // Fallback: If no keys are set, simulate successful charge for development

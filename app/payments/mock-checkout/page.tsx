@@ -10,6 +10,7 @@ function MockCheckoutContent() {
   const amountInCents = Number(searchParams.get("amountInCents") || "0");
   const description = searchParams.get("description") || "Llandudno stay booking";
   const packageType = searchParams.get("packageType") || "shack_stack";
+  const bookingId = searchParams.get("bookingId") || "";
 
   const amountInRands = amountInCents / 100;
 
@@ -17,11 +18,11 @@ function MockCheckoutContent() {
     // Generate the redirect URL based on siteUrl or root of application
     let redirectUrl = "";
     if (status === "success") {
-      redirectUrl = `/?payment=success&type=${packageType}&amount=${amountInRands}`;
+      redirectUrl = `/?payment=success&bookingId=${bookingId}&type=${packageType}&amount=${amountInRands}`;
     } else if (status === "cancel") {
-      redirectUrl = `/?payment=cancel&type=${packageType}`;
+      redirectUrl = `/?payment=cancel&bookingId=${bookingId}&type=${packageType}`;
     } else {
-      redirectUrl = `/?payment=failed&type=${packageType}`;
+      redirectUrl = `/?payment=failed&bookingId=${bookingId}&type=${packageType}`;
     }
     
     window.location.href = redirectUrl;

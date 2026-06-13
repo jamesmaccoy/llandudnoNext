@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createBooking, listBookings, getProperty } from "@/lib/firebase";
+import { createBooking, listBookings, getProperty, updateBookingStatus } from "@/lib/firebase";
 
 // In-memory cache for external feeds keyed by URL to support multiple properties
 interface CacheEntry {
@@ -225,6 +225,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, booking }, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/bookings error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { bookingId, paymentStatus } = body;
+
+    if (!bookingId || !paymentStatus) {
+      return NextResponse.json(
+        { success: false, error: "bookingId and paymentStatus are required." },
+        { status: 400 }
+      );
+    }
+
+    const updated = await updateBookingStatus(bookingId, paymentStatus);
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, error: `Booking with ID ${bookingId} not found.` },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: `Booking status updated to ${paymentStatus}.` });
+  } catch (error: any) {
+    console.error("PATCH /api/bookings error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

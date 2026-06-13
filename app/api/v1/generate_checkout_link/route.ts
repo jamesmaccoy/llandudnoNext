@@ -90,7 +90,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return processGenerateRequest(type);
+    const bookingId = body.bookingId;
+    const amountInCentsOverride = body.amountInCentsOverride;
+    const descriptionOverride = body.descriptionOverride;
+
+    return processGenerateRequest(type, bookingId, amountInCentsOverride, descriptionOverride);
   } catch (err: any) {
     console.error("generate_checkout_link post parsing error:", err);
     return NextResponse.json(
@@ -100,7 +104,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function processGenerateRequest(type: string) {
+async function processGenerateRequest(
+  type: string,
+  bookingId?: string,
+  amountInCentsOverride?: number,
+  descriptionOverride?: string
+) {
   try {
     const pkg = await getPackage(type);
     if (!pkg) {
@@ -114,14 +123,18 @@ async function processGenerateRequest(type: string) {
       );
     }
 
-    const amountInCents = parsePriceToCents(pkg);
-    const description =
-      pkg.description || pkg.name || pkg.title || PACKAGE_LABELS[type.trim()] || type;
+    const amountInCents = amountInCentsOverride !== undefined ? amountInCentsOverride : parsePriceToCents(pkg);
+    const description = descriptionOverride !== undefined ? descriptionOverride : (
+      pkg.description || pkg.name || pkg.title || PACKAGE_LABELS[type.trim()] || type
+    );
 
     const redirectUrl = await createCheckout({
       amountInCents,
       description,
-      metadata: { packageType: type },
+      metadata: {
+        packageType: type,
+        bookingId: bookingId || ""
+      },
     });
 
     return NextResponse.json(

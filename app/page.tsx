@@ -20,6 +20,7 @@ function HomePageContent() {
   const paymentStatus = searchParams.get("payment");
   const packageType = searchParams.get("type");
   const amountPaid = searchParams.get("amount");
+  const bookingId = searchParams.get("bookingId");
 
   const { user, loading: authLoading } = useAuth();
 
@@ -34,6 +35,36 @@ function HomePageContent() {
   const [savedDates, setSavedDates] = useState<{ fromDate: string; toDate: string } | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [nights, setNights] = useState<number>(3);
+  const [hasUpdatedStatus, setHasUpdatedStatus] = useState(false);
+
+  // Client-side payment status update fallback (useful for localhost testing where webhooks can't reach)
+  useEffect(() => {
+    if (!bookingId || !paymentStatus || hasUpdatedStatus) return;
+
+    const updateStatus = async () => {
+      setHasUpdatedStatus(true);
+      try {
+        let statusToSet = "pending";
+        if (paymentStatus === "success") {
+          statusToSet = "paid";
+        } else if (paymentStatus === "failed") {
+          statusToSet = "failed";
+        } else if (paymentStatus === "cancel") {
+          statusToSet = "cancelled";
+        }
+
+        await fetch("/api/bookings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookingId, paymentStatus: statusToSet })
+        });
+      } catch (err) {
+        console.error("Failed to sync booking status client-side fallback:", err);
+      }
+    };
+
+    updateStatus();
+  }, [bookingId, paymentStatus, hasUpdatedStatus]);
 
   // Load properties
   useEffect(() => {

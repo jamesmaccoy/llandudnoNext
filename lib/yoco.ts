@@ -30,15 +30,10 @@ export async function createCheckout({ amountInCents, description, metadata }: C
   const siteUrl = (process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 
   if (!secretKey) {
-    console.warn("⚠️ YOCO_SECRET_KEY is not set. Generating MOCK checkout redirect link.");
-    // Redirect to a local mock checkout page inside the Next.js app
-    const params = new URLSearchParams({
-      amountInCents: amountInCents.toString(),
-      description: description,
-      packageType: metadata?.packageType || "shack_stack",
-      bookingId: metadata?.bookingId || ""
-    });
-    return `/payments/mock-checkout?${params.toString()}`;
+    throw new Error(
+      "YOCO_SECRET_KEY or TEST_YOCO_SEC environment variable is not configured. " +
+      "Please add your Yoco secret key to environment variables (.env.local) to process checkout redirects."
+    );
   }
 
   if (secretKey.startsWith("pk_")) {
@@ -47,18 +42,19 @@ export async function createCheckout({ amountInCents, description, metadata }: C
     );
   }
 
-  const successUrl = process.env.YOCO_SUCCESS_URL || `${siteUrl}/?payment=success`;
-  const cancelUrl = process.env.YOCO_CANCEL_URL || `${siteUrl}/?payment=cancel`;
-  const failureUrl = process.env.YOCO_FAILURE_URL || `${siteUrl}/?payment=failed`;
+  const bookingId = metadata?.bookingId || "";
+  const successUrl = process.env.YOCO_SUCCESS_URL || `${siteUrl}/?payment=success${bookingId ? `&bookingId=${bookingId}` : ""}`;
+  const cancelUrl = process.env.YOCO_CANCEL_URL || `${siteUrl}/?payment=cancel${bookingId ? `&bookingId=${bookingId}` : ""}`;
+  const failureUrl = process.env.YOCO_FAILURE_URL || `${siteUrl}/?payment=failed${bookingId ? `&bookingId=${bookingId}` : ""}`;
 
   const body = {
     amount: amountInCents,
     currency: "ZAR",
     description: description,
     metadata: metadata || {},
-    successRedirectUrl: successUrl,
-    cancelRedirectUrl: cancelUrl,
-    failureRedirectUrl: failureUrl,
+    successUrl: successUrl,
+    cancelUrl: cancelUrl,
+    failureUrl: failureUrl,
   };
 
   const response = await fetch(CHECKOUT_URL, {

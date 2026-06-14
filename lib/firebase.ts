@@ -580,25 +580,31 @@ export async function getLatestEstimateForUser(userId: string): Promise<any | nu
   try {
     const snapCustomer = await db.collection("estimates")
       .where("customerId", "==", userId)
-      .orderBy("createdAt", "desc")
-      .limit(1)
       .get();
       
     const snapGuest = await db.collection("estimates")
       .where("guests", "array-contains", userId)
-      .orderBy("createdAt", "desc")
-      .limit(1)
       .get();
       
-    const estCustomer = !snapCustomer.empty ? snapCustomer.docs[0].data() : null;
-    const estGuest = !snapGuest.empty ? snapGuest.docs[0].data() : null;
-    
-    if (estCustomer && estGuest) {
-      const timeCustomer = new Date(estCustomer.createdAt || 0).getTime();
-      const timeGuest = new Date(estGuest.createdAt || 0).getTime();
-      return timeCustomer > timeGuest ? estCustomer : estGuest;
-    }
-    return estCustomer || estGuest;
+    const results: any[] = [];
+    snapCustomer.forEach((doc: any) => {
+      results.push(doc.data());
+    });
+    snapGuest.forEach((doc: any) => {
+      const data = doc.data();
+      // Avoid adding duplicates if the user is both the customer and in guests list
+      if (!results.some(r => r.id === data.id)) {
+        results.push(data);
+      }
+    });
+
+    if (results.length === 0) return null;
+
+    results.sort((a: any, b: any) => 
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+
+    return results[0];
   } catch (err) {
     console.error(`[Firebase] getLatestEstimateForUser error:`, err);
     const dbData = readMockDb();

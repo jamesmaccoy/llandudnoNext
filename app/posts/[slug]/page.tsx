@@ -119,6 +119,10 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
       alert("Please sign in to save your dates.");
       return;
     }
+    if (!property) {
+      alert("Property details are still loading.");
+      return;
+    }
 
     const start = new Date(fromDate);
     const end = new Date(toDate);
@@ -148,13 +152,40 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
       }
 
       setSavedDates(result.data);
-      alert("✅ Dates locked successfully to your profile!");
+
+      // Calculate stay duration and total cost for the estimate
+      const stayNights = Math.max(1, Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      const estimatedTotal = property.basePricePerNight * stayNights;
+
+      // Create estimate immediately
+      const estRes = await fetch("/api/estimates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: property.id,
+          packageId: null,
+          customerName: user.displayName || user.email?.split("@")[0] || "Authenticated Guest",
+          customerEmail: user.email || "",
+          customerId: user.uid,
+          fromDate: start.toISOString(),
+          toDate: end.toISOString(),
+          total: estimatedTotal
+        })
+      });
+
+      const estResult = await estRes.json();
+      if (estRes.ok && estResult.success) {
+        setLatestEstimate(estResult.estimate);
+      }
+
+      alert("✅ Dates locked successfully to your profile and estimate generated!");
     } catch (err: any) {
       setDateError(err.message);
     } finally {
       setIsSavingDates(false);
     }
   };
+
 
   if (isLoading || authLoading) {
     return (

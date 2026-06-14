@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Llandudno Booking Engine",
-  description: "Next.js Rebuild of Yoco & Firebase Booking Flow",
+  title: "Simple Plek",
+  description: "Unique packages for inaccesible locations",
 };
 
 export default function RootLayout({

@@ -16,7 +16,7 @@ interface Property {
 function HomePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const paymentStatus = searchParams.get("payment");
   const packageType = searchParams.get("type");
   const amountPaid = searchParams.get("amount");
@@ -112,7 +112,7 @@ function HomePageContent() {
           const endStr = result.data.toDate.split("T")[0];
           setFromDate(startStr);
           setToDate(endStr);
-          
+
           // Compute nights
           const start = new Date(startStr);
           const end = new Date(endStr);
@@ -206,10 +206,10 @@ function HomePageContent() {
         {/* Intro Header */}
         <header className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50/50 dark:bg-white/5 border border-teal-100 dark:border-white/10 text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-4">
-            <span>✨ Guest Booking Flow</span>
+            <span>✨ Simple Plek</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-950 via-zinc-800 to-zinc-600 dark:from-white dark:via-zinc-200 dark:to-zinc-400">
-            Llandudno Stays
+            Unique Packages
           </h1>
           <p className="mt-4 text-sm text-teal-900/80 dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
             Begin by choosing your stay dates and authenticating. Your selections will be saved dynamically to configure package checkouts.
@@ -339,11 +339,10 @@ function HomePageContent() {
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">
                     📌 Your Latest Estimate
                   </span>
-                  <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                    latestEstimate.paymentStatus === "paid" 
-                      ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                  <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${latestEstimate.paymentStatus === "paid"
+                      ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                       : "bg-orange-50/50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400"
-                  }`}>
+                    }`}>
                     {latestEstimate.paymentStatus}
                   </span>
                 </div>
@@ -377,17 +376,16 @@ function HomePageContent() {
             <button
               onClick={handleSaveDates}
               disabled={isSavingDates || authLoading}
-              className={`w-full rounded-xl py-3 text-center text-xs font-bold text-white transition-all ${
-                !user
+              className={`w-full rounded-xl py-3 text-center text-xs font-bold text-white transition-all ${!user
                   ? "bg-neutral-800 text-white/35 cursor-not-allowed border border-neutral-700"
                   : "bg-gradient-to-r from-teal-500 to-emerald-500 shadow-md shadow-teal-500/10 hover:brightness-110 active:scale-95"
-              }`}
+                }`}
             >
-              {!user 
-                ? "🔒 Authenticate first to lock dates" 
-                : isSavingDates 
-                ? "Saving Date Profile..." 
-                : "Confirm & Save Dates"}
+              {!user
+                ? "🔒 Authenticate first to lock dates"
+                : isSavingDates
+                  ? "Saving Date Profile..."
+                  : "Confirm & Save Dates"}
             </button>
           </div>
         </div>
@@ -426,7 +424,7 @@ function HomePageContent() {
                         {p.title}
                       </h3>
                       <p className="text-[10px] font-mono text-teal-800/60 dark:text-zinc-500 mt-0.5">slug: {p.slug}</p>
-                      
+
                       {datesLocked && (
                         <div className="mt-4 rounded-xl bg-teal-55/5 dark:bg-teal-500/5 border border-teal-100 dark:border-teal-500/10 p-3 text-[11px] text-teal-850 dark:text-teal-300">
                           📅 Selected: <strong className="text-teal-950 dark:text-white">{formatDisplayDate(savedDates.fromDate)}</strong> to <strong className="text-teal-950 dark:text-white">{formatDisplayDate(savedDates.toDate)}</strong>

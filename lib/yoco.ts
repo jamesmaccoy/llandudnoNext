@@ -75,14 +75,37 @@ export async function createCheckout({ amountInCents, description, metadata }: C
 
   let data = await response.json().catch(() => ({}));
 
-  // Fallback to beta/sandbox if key is a test key and production rejected it with 403
-  if (!response.ok && response.status === 403 && secretKey.startsWith("sk_test_")) {
+  // Fallback 1: If the key failed with 403, and we have a test key that is different, retry with TEST_YOCO_SEC on payments.yoco.com
+  if (!response.ok && response.status === 403 && process.env.TEST_YOCO_SEC) {
+    const trimmedTestKey = process.env.TEST_YOCO_SEC.trim();
+    if (secretKey !== trimmedTestKey) {
+      console.warn("⚠️ Resolved key failed with 403. Retrying with TEST_YOCO_SEC on payments.yoco.com...");
+      const testResponse = await fetch(CHECKOUT_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${trimmedTestKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (testResponse.ok) {
+        response = testResponse;
+        data = await response.json().catch(() => ({}));
+      }
+    }
+  }
+
+  // Fallback 2: If we are still failing with 403 and the key is a test key, it might be a beta staging key.
+  // Retry against payments.yocobeta.co.za
+  const currentKey = (response.ok ? "" : (secretKey || "")).trim();
+  if (!response.ok && response.status === 403 && currentKey.startsWith("sk_test_")) {
     console.warn("⚠️ Received 403 from payments.yoco.com. Retrying with payments.yocobeta.co.za sandbox endpoint...");
     const BETA_CHECKOUT_URL = "https://payments.yocobeta.co.za/api/checkouts";
     const betaResponse = await fetch(BETA_CHECKOUT_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${secretKey}`,
+        Authorization: `Bearer ${currentKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),

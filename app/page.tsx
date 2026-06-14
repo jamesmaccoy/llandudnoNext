@@ -265,9 +265,27 @@ function HomePageContent() {
         <div className="w-full max-w-xl mx-auto mb-12 border-b border-teal-100 dark:border-white/5 pb-12">
           {/* Date Picker Selector */}
           <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 shadow-xl backdrop-blur-md space-y-4">
-            <h2 className="text-base font-bold text-teal-950 dark:text-white flex items-center gap-2">
-              <span className="text-teal-600 dark:text-teal-400">📅</span> Step 1: Set Stay Dates
-            </h2>
+            <div className="flex justify-between items-center w-full border-b border-teal-100/50 dark:border-white/15 pb-2">
+              <h2 className="text-base font-bold text-teal-950 dark:text-white flex items-center gap-2">
+                <span className="text-teal-600 dark:text-teal-400">📅</span> Step 1: Set Stay Dates
+              </h2>
+              {latestEstimate && (
+                <button
+                  onClick={() => {
+                    const inviteUrl = `${window.location.origin}/i/${latestEstimate.token}`;
+                    navigator.clipboard.writeText(inviteUrl);
+                    alert("📋 Invite URL copied to clipboard: " + inviteUrl);
+                  }}
+                  title="Share Estimate Invitation"
+                  className="rounded-full bg-teal-50 dark:bg-white/5 border border-teal-100 dark:border-white/10 p-2 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 transition-all active:scale-95 flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l5.57 3.285m-5.57-3.285l5.57-3.285M13.5 18.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM13.5 9.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
             <p className="text-xs text-teal-800/80 dark:text-zinc-400 leading-relaxed">
               Define check-in and check-out ranges. Dates must be persistent to user profiles before package selection is enabled.
             </p>

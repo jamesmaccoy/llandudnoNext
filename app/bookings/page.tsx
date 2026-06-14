@@ -167,9 +167,9 @@ function BookingsCheckoutContent() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center text-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
-        <span className="mt-3 text-xs text-zinc-500">Securing Session Context...</span>
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-teal-950 dark:text-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-teal-500 border-teal-150 dark:border-white/10" />
+        <span className="mt-3 text-xs text-teal-800/60 dark:text-zinc-500">Securing Session Context...</span>
       </div>
     );
   }
@@ -177,10 +177,10 @@ function BookingsCheckoutContent() {
   // 1. Not Authenticated State
   if (!user) {
     return (
-      <div className="max-w-md mx-auto my-20 p-8 rounded-3xl border border-white/10 bg-white/5 text-center">
+      <div className="max-w-md mx-auto my-20 p-8 rounded-3xl border border-teal-100 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 text-center">
         <span className="text-3xl">🔑</span>
-        <h3 className="text-lg font-bold text-white mt-4">Authentication Required</h3>
-        <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+        <h3 className="text-lg font-bold text-teal-950 dark:text-white mt-4">Authentication Required</h3>
+        <p className="text-xs text-teal-800/80 dark:text-zinc-400 mt-2 leading-relaxed">
           {propertyId 
             ? "You must be logged in and have selected stay dates before checking out a package." 
             : "You must be logged in to view your stays."}
@@ -198,10 +198,10 @@ function BookingsCheckoutContent() {
   // 2. Dates not selected state (Only during checkout flow)
   if (propertyId && !savedDates) {
     return (
-      <div className="max-w-md mx-auto my-20 p-8 rounded-3xl border border-white/10 bg-white/5 text-center">
+      <div className="max-w-md mx-auto my-20 p-8 rounded-3xl border border-teal-100 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 text-center">
         <span className="text-3xl">📅</span>
-        <h3 className="text-lg font-bold text-white mt-4">Dates Missing</h3>
-        <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+        <h3 className="text-lg font-bold text-teal-950 dark:text-white mt-4">Dates Missing</h3>
+        <p className="text-xs text-teal-800/80 dark:text-zinc-400 mt-2 leading-relaxed">
           No active stay dates found on your profile. Please configure check-in and check-out dates on the portal first.
         </p>
         <Link
@@ -341,7 +341,7 @@ function BookingsCheckoutContent() {
 
     const getCountdownLabel = (b: Booking) => {
       if (b.paymentStatus === "failed" || b.paymentStatus === "cancelled" || b.paymentStatus === "refunded") {
-        return { text: "No active reservation", class: "text-zinc-500 bg-zinc-950/40 border border-zinc-800" };
+        return { text: "No active reservation", class: "text-teal-800/70 bg-teal-50/30 border border-teal-100 dark:text-zinc-500 dark:bg-zinc-950/40 dark:border-zinc-800" };
       }
 
       const now = new Date();
@@ -352,16 +352,16 @@ function BookingsCheckoutContent() {
       end.setHours(0, 0, 0, 0);
 
       if (now > end) {
-        return { text: "Completed stay", class: "text-zinc-400 bg-zinc-950/40 border border-zinc-900" };
+        return { text: "Completed stay", class: "text-teal-800/70 bg-teal-50/20 border border-teal-100 dark:text-zinc-400 dark:bg-zinc-950/40 dark:border-zinc-900" };
       } else if (now >= start && now <= end) {
-        return { text: "Active Now 🟢", class: "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 animate-pulse font-bold" };
+        return { text: "Active Now 🟢", class: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 animate-pulse font-bold" };
       } else {
         const diffTime = start.getTime() - now.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (diffDays === 1) {
-          return { text: "Starts tomorrow 📅", class: "text-teal-400 bg-teal-500/10 border border-teal-500/20 font-bold" };
+          return { text: "Starts tomorrow 📅", class: "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 border border-teal-150 dark:border-teal-500/20 font-bold" };
         }
-        return { text: `Starts in ${diffDays} days`, class: "text-zinc-300 bg-white/5 border border-white/10" };
+        return { text: `Starts in ${diffDays} days`, class: "text-teal-800 dark:text-zinc-300 bg-teal-50/50 dark:bg-white/5 border border-teal-100 dark:border-white/10" };
       }
     };
 
@@ -371,27 +371,27 @@ function BookingsCheckoutContent() {
           <div className="absolute -top-[10%] left-[20%] w-[60%] h-[60%] rounded-full bg-teal-500/10 blur-[120px]" />
         </div>
 
-        <header className="mb-10 border-b border-white/10 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <header className="mb-10 border-b border-teal-100 dark:border-white/10 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <span className="text-[10px] text-teal-400 font-extrabold uppercase tracking-wide">Account Stays</span>
-            <h1 className="text-3xl font-black text-white mt-1">My Bookings Dashboard</h1>
+            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-extrabold uppercase tracking-wide">Account Stays</span>
+            <h1 className="text-3xl font-black text-teal-950 dark:text-white mt-1">My Bookings Dashboard</h1>
           </div>
           <Link
             href="/"
-            className="text-xs text-zinc-400 hover:text-white transition-colors"
+            className="text-xs text-teal-800 dark:text-zinc-400 hover:text-teal-950 dark:hover:text-white transition-colors"
           >
             ← View Destination Properties
           </Link>
         </header>
 
         {user?.isAdmin && (
-          <div className="flex border-b border-white/5 mb-8">
+          <div className="flex border-b border-teal-100 dark:border-white/5 mb-8">
             <button
               onClick={() => setViewMode("my")}
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
                 viewMode === "my"
-                  ? "border-teal-500 text-teal-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  ? "border-teal-500 text-teal-600 dark:text-teal-400"
+                  : "border-transparent text-teal-800/60 dark:text-zinc-500 hover:text-teal-950 dark:hover:text-zinc-300"
               }`}
             >
               My Bookings
@@ -400,8 +400,8 @@ function BookingsCheckoutContent() {
               onClick={() => setViewMode("all")}
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
                 viewMode === "all"
-                  ? "border-teal-500 text-teal-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  ? "border-teal-500 text-teal-600 dark:text-teal-400"
+                  : "border-transparent text-teal-800/60 dark:text-zinc-500 hover:text-teal-950 dark:hover:text-zinc-300"
               }`}
             >
               All System Bookings (Admin)
@@ -410,10 +410,10 @@ function BookingsCheckoutContent() {
         )}
 
         {displayBookings.length === 0 ? (
-          <div className="text-center py-20 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md">
+          <div className="text-center py-20 rounded-3xl border border-teal-100 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 backdrop-blur-md">
             <span className="text-4xl">🧳</span>
-            <h3 className="text-lg font-bold text-white mt-4">No Stays Found</h3>
-            <p className="text-xs text-zinc-400 mt-2 max-w-sm mx-auto leading-relaxed">
+            <h3 className="text-lg font-bold text-teal-950 dark:text-white mt-4">No Stays Found</h3>
+            <p className="text-xs text-teal-800/80 dark:text-zinc-400 mt-2 max-w-sm mx-auto leading-relaxed">
               {viewMode === "my"
                 ? "You haven't reserved any stays yet. Visit the homepage to choose a property and dates."
                 : "No bookings recorded in the system ledger yet."}
@@ -439,29 +439,29 @@ function BookingsCheckoutContent() {
               return (
                 <div
                   key={b.id}
-                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-zinc-900/60 p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between shadow-xl"
+                  className="group relative overflow-hidden rounded-3xl border border-teal-100/80 dark:border-white/15 bg-teal-50/15 dark:bg-zinc-900/60 p-6 backdrop-blur-md hover:border-teal-200 dark:hover:border-white/20 transition-all flex flex-col justify-between shadow-xl"
                 >
                   <div className="absolute -right-10 -top-10 w-24 h-24 rounded-full bg-teal-500/5 blur-xl group-hover:bg-teal-500/10 transition-all pointer-events-none" />
 
                   <div className="space-y-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <span className="inline-block rounded bg-teal-500/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-400">
+                        <span className="inline-block rounded bg-teal-500/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-600 dark:text-teal-400">
                           {b.propertyId === "shack" ? "Beach Shack" : b.propertyId === "cottage" ? "Cozy Cottage" : "Luxury Villa"}
                         </span>
-                        <h3 className="text-lg font-black text-white mt-1 group-hover:text-teal-400 transition-colors">
+                        <h3 className="text-lg font-black text-teal-950 dark:text-white mt-1 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                           {propName}
                         </h3>
-                        <span className="text-[9px] font-mono text-zinc-500 block mt-0.5">Ref: {b.id}</span>
+                        <span className="text-[9px] font-mono text-teal-800/60 dark:text-zinc-500 block mt-0.5">Ref: {b.id}</span>
                       </div>
                       
                       <span
                         className={`inline-block rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide border ${
                           b.paymentStatus === "paid" || b.paymentStatus === "success"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                            ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/25"
                             : b.paymentStatus === "failed"
-                            ? "bg-red-500/10 text-red-400 border-red-500/25"
-                            : "bg-orange-500/10 text-orange-400 border-orange-500/25"
+                            ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-100 dark:border-red-500/25"
+                            : "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/25"
                         }`}
                       >
                         {b.paymentStatus}
@@ -474,31 +474,31 @@ function BookingsCheckoutContent() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 rounded-2xl bg-black/40 p-4 border border-white/5 text-xs">
+                    <div className="grid grid-cols-2 gap-4 rounded-2xl bg-white dark:bg-black/40 p-4 border border-teal-100 dark:border-white/5 text-xs">
                       <div>
-                        <span className="text-[10px] text-zinc-500 uppercase block">Check-in</span>
-                        <span className="font-bold text-white mt-1 block">{checkIn}</span>
+                        <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase block">Check-in</span>
+                        <span className="font-bold text-teal-950 dark:text-white mt-1 block">{checkIn}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-zinc-500 uppercase block">Check-out</span>
-                        <span className="font-bold text-white mt-1 block">{checkOut}</span>
+                        <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase block">Check-out</span>
+                        <span className="font-bold text-teal-950 dark:text-white mt-1 block">{checkOut}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-6 border-t border-white/5 pt-4 flex items-center justify-between text-xs">
+                  <div className="mt-6 border-t border-teal-100 dark:border-white/5 pt-4 flex items-center justify-between text-xs">
                     <div>
                       {viewMode === "all" && (
-                        <div className="text-[10px] text-zinc-400 mb-1">
-                          Guest: <strong className="text-white">{b.customerName}</strong> <span className="text-zinc-500 font-mono text-[9px]">({b.customerEmail})</span>
+                        <div className="text-[10px] text-teal-800/80 dark:text-zinc-400 mb-1">
+                          Guest: <strong className="text-teal-950 dark:text-white">{b.customerName}</strong> <span className="text-teal-800/60 dark:text-zinc-500 font-mono text-[9px]">({b.customerEmail})</span>
                         </div>
                       )}
-                      <span className="text-[10px] text-zinc-500 uppercase">Duration</span>
-                      <span className="font-bold text-white block mt-0.5">{stayNights} night(s) stay</span>
+                      <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase">Duration</span>
+                      <span className="font-bold text-teal-950 dark:text-white block mt-0.5">{stayNights} night(s) stay</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-zinc-500 uppercase">Paid Total</span>
-                      <span className="text-lg font-black text-teal-400 block mt-0.5">
+                      <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase">Paid Total</span>
+                      <span className="text-lg font-black text-teal-600 dark:text-teal-400 block mt-0.5">
                         R {b.total ? b.total.toLocaleString() : "0"}
                       </span>
                     </div>
@@ -515,14 +515,14 @@ function BookingsCheckoutContent() {
   return (
     <div className="relative max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
       {/* Page Header */}
-      <header className="mb-10 border-b border-white/10 pb-6 flex items-center justify-between">
+      <header className="mb-10 border-b border-teal-100 dark:border-white/10 pb-6 flex items-center justify-between">
         <div>
-          <span className="text-[10px] text-teal-400 font-extrabold uppercase tracking-wide">Step 2: Checkout</span>
-          <h1 className="text-3xl font-black text-white mt-1">Book Your Package stay</h1>
+          <span className="text-[10px] text-teal-600 dark:text-teal-400 font-extrabold uppercase tracking-wide">Step 2: Checkout</span>
+          <h1 className="text-3xl font-black text-teal-950 dark:text-white mt-1">Book Your Package stay</h1>
         </div>
         <Link
           href="/"
-          className="text-xs text-zinc-400 hover:text-white transition-colors"
+          className="text-xs text-teal-800 dark:text-zinc-400 hover:text-teal-950 dark:hover:text-white transition-colors"
         >
           ← Change Dates / Property
         </Link>
@@ -532,39 +532,39 @@ function BookingsCheckoutContent() {
         {/* Left Side: Summary & Package Select */}
         <div className="lg:col-span-3 space-y-6">
           {/* Stay Details summary */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md space-y-4">
-            <h3 className="text-base font-bold text-white">1. Stay Configuration</h3>
+          <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md space-y-4">
+            <h3 className="text-base font-bold text-teal-950 dark:text-white">1. Stay Configuration</h3>
             
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="rounded-2xl bg-black/40 p-4 border border-white/5">
-                <span className="text-[10px] text-zinc-500 uppercase block">Selected Destination</span>
-                <span className="text-sm font-extrabold text-white mt-1 block">
+              <div className="rounded-2xl bg-white dark:bg-black/40 p-4 border border-teal-100/50 dark:border-white/5">
+                <span className="text-[10px] text-teal-850/60 dark:text-zinc-500 uppercase block">Selected Destination</span>
+                <span className="text-sm font-extrabold text-teal-950 dark:text-white mt-1 block">
                   {property ? property.title : "Llandudno"}
                 </span>
-                <span className="text-[10px] text-zinc-500 font-mono">id: {propertyId}</span>
+                <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 font-mono">id: {propertyId}</span>
               </div>
-              <div className="rounded-2xl bg-black/40 p-4 border border-white/5">
-                <span className="text-[10px] text-zinc-500 uppercase block">Booking Dates</span>
-                <span className="text-sm font-extrabold text-white mt-1 block">
+              <div className="rounded-2xl bg-white dark:bg-black/40 p-4 border border-teal-100/50 dark:border-white/5">
+                <span className="text-[10px] text-teal-850/60 dark:text-zinc-500 uppercase block">Booking Dates</span>
+                <span className="text-sm font-extrabold text-teal-950 dark:text-white mt-1 block">
                   {formatDisplayDate(from)} - {formatDisplayDate(to)}
                 </span>
-                <span className="text-[10px] text-zinc-500 font-mono">{nights} night(s) stay</span>
+                <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 font-mono">{nights} night(s) stay</span>
               </div>
             </div>
           </div>
 
           {/* Package Configuration */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md space-y-4">
-            <h3 className="text-base font-bold text-white">2. Select Package Option</h3>
+          <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md space-y-4">
+            <h3 className="text-base font-bold text-teal-950 dark:text-white">2. Select Package Option</h3>
             
             <div>
               <select
                 value={selectedPackageId}
                 onChange={(e) => setSelectedPackageId(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-teal-500 focus:outline-none"
+                className="w-full rounded-xl border border-teal-150 dark:border-white/10 bg-white dark:bg-black/40 px-4 py-3 text-sm text-teal-950 dark:text-white focus:border-teal-500 focus:outline-none"
               >
                 {packages.map((pkg) => (
-                  <option key={pkg.id} value={pkg.id} className="bg-zinc-950">
+                  <option key={pkg.id} value={pkg.id} className="bg-white dark:bg-zinc-950 text-teal-950 dark:text-white">
                     {pkg.name}
                   </option>
                 ))}
@@ -572,18 +572,18 @@ function BookingsCheckoutContent() {
             </div>
 
             {selectedPackage && (
-              <div className="rounded-2xl bg-black/40 p-4 border border-white/5 space-y-2.5">
+              <div className="rounded-2xl bg-white dark:bg-black/40 p-4 border border-teal-100 dark:border-white/5 space-y-2.5">
                 <div className="flex justify-between items-center">
-                  <span className="rounded bg-teal-500/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-400">
+                  <span className="rounded bg-teal-50 dark:bg-teal-500/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-600 dark:text-teal-400">
                     {selectedPackage.category} Package
                   </span>
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-xs text-teal-800/60 dark:text-zinc-500">
                     Base Multiplier: <strong>{selectedPackage.multiplier}x</strong>
                   </span>
                 </div>
-                <h4 className="text-sm font-extrabold text-white">{selectedPackage.name}</h4>
+                <h4 className="text-sm font-extrabold text-teal-950 dark:text-white">{selectedPackage.name}</h4>
                 {selectedPackage.description && (
-                  <p className="text-xs text-zinc-400 leading-relaxed">{selectedPackage.description}</p>
+                  <p className="text-xs text-teal-900/80 dark:text-zinc-400 leading-relaxed">{selectedPackage.description}</p>
                 )}
               </div>
             )}
@@ -592,30 +592,30 @@ function BookingsCheckoutContent() {
 
         {/* Right Side: Total calculations & Secure Book action */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-white border-b border-white/15 pb-2">3. Cost Estimate & Pay</h3>
+          <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md shadow-xl space-y-4">
+            <h3 className="text-base font-bold text-teal-950 dark:text-white border-b border-teal-100/50 dark:border-white/15 pb-2">3. Cost Estimate & Pay</h3>
 
             <div className="space-y-3 text-xs">
-              <div className="flex justify-between text-zinc-400">
+              <div className="flex justify-between text-teal-900 dark:text-zinc-400">
                 <span>Stay Duration:</span>
-                <span className="font-bold text-white">{nights} nights</span>
+                <span className="font-bold text-teal-950 dark:text-white">{nights} nights</span>
               </div>
-              <div className="flex justify-between text-zinc-400">
+              <div className="flex justify-between text-teal-900 dark:text-zinc-400">
                 <span>Nightly Cost (R {basePricePerNight} × {nights}):</span>
-                <span className="font-bold text-white">R {baseCost.toLocaleString()}</span>
+                <span className="font-bold text-teal-950 dark:text-white">R {baseCost.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-zinc-400">
+              <div className="flex justify-between text-teal-900 dark:text-zinc-400">
                 <span>Addon Base rate:</span>
-                <span className="font-bold text-white">R {packageBaseRate}</span>
+                <span className="font-bold text-teal-950 dark:text-white">R {packageBaseRate}</span>
               </div>
-              <div className="flex justify-between text-zinc-400">
+              <div className="flex justify-between text-teal-900 dark:text-zinc-400">
                 <span>Package Multiplier:</span>
-                <span className="font-bold text-white">× {packageMultiplier}</span>
+                <span className="font-bold text-teal-950 dark:text-white">× {packageMultiplier}</span>
               </div>
               
-              <div className="border-t border-white/10 pt-4 flex justify-between items-center">
-                <span className="text-sm font-bold text-white">Payable Total ZAR:</span>
-                <span className="text-2xl font-black text-teal-400">
+              <div className="border-t border-teal-100 dark:border-white/10 pt-4 flex justify-between items-center">
+                <span className="text-sm font-bold text-teal-950 dark:text-white">Payable Total ZAR:</span>
+                <span className="text-2xl font-black text-teal-600 dark:text-teal-400">
                   R {finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -624,11 +624,11 @@ function BookingsCheckoutContent() {
             {/* Date Overlap block alert & visual resolver */}
             {dateConflict && (
               <div className="space-y-4">
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-center text-xs font-bold text-red-400">
+                <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3 text-center text-xs font-bold text-red-600 dark:text-red-400">
                   ⚠️ {dateConflict}
                 </div>
-                <div className="rounded-3xl border border-white/5 bg-zinc-950 p-4 space-y-3">
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                <div className="rounded-3xl border border-teal-100 dark:border-white/5 bg-teal-50/10 dark:bg-zinc-950 p-4 space-y-3">
+                  <p className="text-[11px] text-teal-800/80 dark:text-zinc-400 leading-relaxed">
                     Select an available date range on the calendar below to update your stay dates:
                   </p>
                   <CalendarPicker
@@ -656,8 +656,8 @@ function BookingsCheckoutContent() {
 
           {/* Checkout console logger */}
           {checkoutLog.length > 0 && (
-            <div className="rounded-3xl border border-white/5 bg-black/60 p-4 font-mono text-[9px] text-teal-300 space-y-1 max-h-40 overflow-y-auto">
-              <div className="text-white/40 mb-1 border-b border-white/5 pb-1 font-sans text-[10px]">Session Logs</div>
+            <div className="rounded-3xl border border-teal-100/50 dark:border-white/5 bg-black/90 p-4 font-mono text-[9px] text-teal-400 space-y-1 max-h-40 overflow-y-auto">
+              <div className="text-teal-600/70 dark:text-white/40 mb-1 border-b border-teal-900/30 dark:border-white/5 pb-1 font-sans text-[10px]">Session Logs</div>
               {checkoutLog.map((log, idx) => (
                 <div key={idx}>{log}</div>
               ))}
@@ -667,51 +667,51 @@ function BookingsCheckoutContent() {
       </div>
 
       {/* Bookings Ledger */}
-      <div className="mt-12 border-t border-white/5 pt-12 space-y-4">
-        <h2 className="text-base font-bold uppercase tracking-wider text-zinc-500 text-center">
+      <div className="mt-12 border-t border-teal-100 dark:border-white/5 pt-12 space-y-4">
+        <h2 className="text-base font-bold uppercase tracking-wider text-teal-800/60 dark:text-zinc-500 text-center">
           Property Bookings Ledger
         </h2>
         
         {bookingsList.length === 0 ? (
-          <div className="text-center py-10 rounded-3xl border border-white/5 bg-white/5 text-zinc-500 text-xs">
+          <div className="text-center py-10 rounded-3xl border border-teal-100 dark:border-white/5 bg-teal-50/15 dark:bg-white/5 text-teal-850/60 dark:text-zinc-500 text-xs">
             No bookings registered in the ledger for this property yet.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-3xl border border-white/5 bg-white/5">
+          <div className="overflow-x-auto rounded-3xl border border-teal-100 dark:border-white/5 bg-teal-50/15 dark:bg-white/5">
             <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 bg-black/40 text-zinc-400 uppercase tracking-wider font-bold">
+                <tr className="border-b border-teal-150 dark:border-white/10 bg-teal-50/60 dark:bg-black/40 text-teal-950 dark:text-zinc-400 uppercase tracking-wider font-bold">
                   <th className="px-5 py-3">Customer</th>
                   <th className="px-5 py-3">Dates</th>
                   <th className="px-5 py-3">Paid Total</th>
                   <th className="px-5 py-3">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-zinc-300">
+              <tbody className="divide-y divide-teal-100/60 dark:divide-white/5 text-teal-900 dark:text-zinc-300">
                 {bookingsList.map((b) => {
                   const checkIn = formatDisplayDate(b.fromDate);
                   const checkOut = formatDisplayDate(b.toDate);
 
                   return (
-                    <tr key={b.id} className="hover:bg-white/5 transition-all">
+                    <tr key={b.id} className="hover:bg-teal-50/20 dark:hover:bg-white/5 transition-all">
                       <td className="px-5 py-4">
-                        <span className="font-bold text-white block">{b.customerName}</span>
-                        <span className="text-[10px] text-zinc-500 block mt-0.5">{b.customerEmail}</span>
+                        <span className="font-bold text-teal-950 dark:text-white block">{b.customerName}</span>
+                        <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 block mt-0.5">{b.customerEmail}</span>
                       </td>
-                      <td className="px-5 py-4 text-zinc-400 font-mono">
+                      <td className="px-5 py-4 text-teal-800/80 dark:text-zinc-400 font-mono">
                         {checkIn} - {checkOut}
                       </td>
-                      <td className="px-5 py-4 font-bold text-teal-400">
+                      <td className="px-5 py-4 font-bold text-teal-600 dark:text-teal-400">
                         R {b.total.toLocaleString()}
                       </td>
                       <td className="px-5 py-4">
                         <span
                           className={`inline-block rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${
                             b.paymentStatus === "paid" || b.paymentStatus === "success"
-                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
+                              ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/25"
                               : b.paymentStatus === "failed"
-                              ? "bg-red-500/10 text-red-400 border border-red-500/25"
-                              : "bg-orange-500/10 text-orange-400 border border-orange-500/25"
+                              ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/25"
+                              : "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/25"
                           }`}
                         >
                           {b.paymentStatus}
@@ -732,8 +732,8 @@ function BookingsCheckoutContent() {
 export default function BookingsCheckoutPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-teal-150 dark:border-white/10" />
       </div>
     }>
       <AuthProvider>

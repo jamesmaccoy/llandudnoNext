@@ -26,11 +26,15 @@ export function parsePriceToCents(pkg: any): number {
 }
 
 export async function createCheckout({ amountInCents, description, metadata }: CreateCheckoutProps): Promise<string> {
-  const secretKey = 
-    process.env.YOCO_SECRET_KEY || 
-    process.env.LIVE_YOCO_SEC || 
-    process.env.TEST_YOCO_SEC;
+  const isProduction = process.env.NODE_ENV === "production";
+  const secretKey = (
+    isProduction
+      ? process.env.YOCO_SECRET_KEY || process.env.LIVE_YOCO_SEC || process.env.TEST_YOCO_SEC
+      : process.env.TEST_YOCO_SEC || process.env.YOCO_SECRET_KEY || process.env.LIVE_YOCO_SEC
+  )?.trim();
   const siteUrl = (process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+
+  console.log(`[Yoco Checkout] Initializing checkout: amount=${amountInCents}, description="${description}", keyPrefix=${secretKey ? secretKey.substring(0, 12) + "..." : "undefined"}`);
 
   if (!secretKey) {
     throw new Error(
@@ -60,7 +64,7 @@ export async function createCheckout({ amountInCents, description, metadata }: C
     failureUrl: failureUrl,
   };
 
-  const response = await fetch(CHECKOUT_URL, {
+  let response = await fetch(CHECKOUT_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${secretKey}`,
@@ -69,7 +73,26 @@ export async function createCheckout({ amountInCents, description, metadata }: C
     body: JSON.stringify(body),
   });
 
-  const data = await response.json().catch(() => ({}));
+  let data = await response.json().catch(() => ({}));
+
+  // Fallback to beta/sandbox if key is a test key and production rejected it with 403
+  if (!response.ok && response.status === 403 && secretKey.startsWith("sk_test_")) {
+    console.warn("⚠️ Received 403 from payments.yoco.com. Retrying with payments.yocobeta.co.za sandbox endpoint...");
+    const BETA_CHECKOUT_URL = "https://payments.yocobeta.co.za/api/checkouts";
+    const betaResponse = await fetch(BETA_CHECKOUT_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (betaResponse.ok) {
+      response = betaResponse;
+      data = await response.json().catch(() => ({}));
+    }
+  }
 
   if (!response.ok) {
     const message = data?.message || data?.error?.message || JSON.stringify(data);

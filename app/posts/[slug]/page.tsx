@@ -37,7 +37,7 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
   const [property, setProperty] = useState<Property | null>(null);
   const [packages, setPackages] = useState<PackageData[]>([]);
   const [savedDates, setSavedDates] = useState<{ fromDate: string; toDate: string } | null>(null);
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingDates, setIsSavingDates] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
           if (pkgResult.success && pkgResult.data) {
             setPackages(pkgResult.data);
           }
-          
+
           // 3. Fetch Bookings for this property
           const bksRes = await fetch(`/api/bookings?propertyId=${found.id}`);
           const bksResult = await bksRes.json();
@@ -99,7 +99,7 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
         console.error("Failed to load user dates:", err);
       }
     };
-    
+
     fetchUserDates();
   }, [user, authLoading]);
 
@@ -147,19 +147,19 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
 
   if (isLoading || authLoading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center text-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
-        <span className="mt-3 text-xs text-zinc-500">Retrieving Listing Information...</span>
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-teal-950 dark:text-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-teal-500 border-teal-150 dark:border-white/10" />
+        <span className="mt-3 text-xs text-teal-800/60 dark:text-zinc-500">Retrieving Listing Information...</span>
       </div>
     );
   }
 
   if (!property) {
     return (
-      <div className="max-w-md mx-auto my-20 p-8 rounded-3xl border border-white/10 bg-white/5 text-center">
+      <div className="max-w-md mx-auto my-20 p-8 rounded-3xl border border-teal-100 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 text-center">
         <span className="text-3xl">⚠️</span>
-        <h3 className="text-lg font-bold text-white mt-4">Listing Not Found</h3>
-        <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+        <h3 className="text-lg font-bold text-teal-950 dark:text-white mt-4">Listing Not Found</h3>
+        <p className="text-xs text-teal-800/80 dark:text-zinc-400 mt-2 leading-relaxed">
           The property slug matching <strong>"{slug}"</strong> does not exist in our database.
         </p>
         <Link
@@ -191,61 +191,61 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
         <div className="absolute -top-[10%] left-[20%] w-[60%] h-[60%] rounded-full bg-teal-500/10 blur-[120px]" />
       </div>
 
-      <Link href="/" className="text-xs text-zinc-500 hover:text-white transition-colors mb-6 inline-block">
+      <Link href="/" className="text-xs text-teal-800 dark:text-zinc-500 hover:text-teal-950 dark:hover:text-white transition-colors mb-6 inline-block">
         ← Back to Listings
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         {/* Left Side: Property Specs */}
         <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md space-y-4">
+          <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md space-y-4">
             <div>
-              <span className="inline-block rounded bg-teal-500/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-400">
+              <span className="inline-block rounded bg-teal-500/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-600 dark:text-teal-400">
                 Premium Stay
               </span>
-              <h1 className="text-3xl font-black text-white mt-2">{property.title}</h1>
-              <span className="text-[10px] text-zinc-500 font-mono block mt-1">Slug: {property.slug} | Database ID: {property.id}</span>
+              <h1 className="text-3xl font-black text-teal-950 dark:text-white mt-2">{property.title}</h1>
+              <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 font-mono block mt-1">Slug: {property.slug} | Database ID: {property.id}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+            <div className="grid grid-cols-2 gap-4 border-t border-teal-100/60 dark:border-white/5 pt-4">
               <div>
-                <span className="text-[10px] text-zinc-500 uppercase">Nightly base price</span>
-                <p className="text-lg font-black text-teal-400">R {property.basePricePerNight.toLocaleString()}</p>
+                <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase">Nightly base price</span>
+                <p className="text-lg font-black text-teal-600 dark:text-teal-400">R {property.basePricePerNight.toLocaleString()}</p>
               </div>
               <div>
-                <span className="text-[10px] text-zinc-500 uppercase">Location</span>
-                <p className="text-sm font-semibold text-white mt-1">🏖 Llandudno, Cape Town</p>
+                <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase">Location</span>
+                <p className="text-sm font-semibold text-teal-950 dark:text-white mt-1">🏖 Llandudno, Cape Town</p>
               </div>
             </div>
 
-            <div className="border-t border-white/5 pt-4">
-              <span className="text-[10px] text-zinc-500 uppercase block">About this property</span>
-              <p className="text-xs text-zinc-300 leading-relaxed mt-1">
+            <div className="border-t border-teal-100/60 dark:border-white/5 pt-4">
+              <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase block">About this property</span>
+              <p className="text-xs text-teal-900/90 dark:text-zinc-300 leading-relaxed mt-1">
                 Experience Llandudno at its finest. This property features unparalleled coastline scenery, proximity to the beach, luxury amenities, and private decks. Connect package options and addons at checkout.
               </p>
             </div>
           </div>
 
           {/* Package deals list */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md space-y-4">
-            <h3 className="text-base font-bold text-white">Available Packages for this Listing</h3>
-            
+          <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md space-y-4">
+            <h3 className="text-base font-bold text-teal-950 dark:text-white">Available Packages for this Listing</h3>
+
             {packages.length === 0 ? (
-              <p className="text-xs text-zinc-500">No specific packages config created for this property yet.</p>
+              <p className="text-xs text-teal-800/60 dark:text-zinc-500">No specific packages config created for this property yet.</p>
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 {packages.map((pkg) => (
-                  <div key={pkg.id} className="rounded-2xl bg-black/40 p-4 border border-white/5 flex items-center justify-between">
+                  <div key={pkg.id} className="rounded-2xl bg-teal-50/40 dark:bg-black/40 p-4 border border-teal-100/50 dark:border-white/5 flex items-center justify-between">
                     <div>
-                      <span className="inline-block rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[8px] font-bold text-zinc-400 uppercase tracking-wide">
+                      <span className="inline-block rounded bg-teal-100/60 dark:bg-white/5 border border-teal-200 dark:border-white/10 px-1.5 py-0.5 text-[8px] font-bold text-teal-800 dark:text-zinc-400 uppercase tracking-wide">
                         {pkg.category} Category
                       </span>
-                      <h4 className="text-xs font-bold text-white mt-1">{pkg.name}</h4>
-                      {pkg.description && <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">{pkg.description}</p>}
+                      <h4 className="text-xs font-bold text-teal-950 dark:text-white mt-1">{pkg.name}</h4>
+                      {pkg.description && <p className="text-[10px] text-teal-900/80 dark:text-zinc-400 mt-1 leading-relaxed">{pkg.description}</p>}
                     </div>
                     <div className="text-right pl-4">
-                      <span className="text-[9px] text-zinc-500 block uppercase">Price</span>
-                      <p className="text-sm font-extrabold text-teal-400">R {pkg.price.toLocaleString()}</p>
+                      <span className="text-[9px] text-teal-850/60 dark:text-zinc-500 block uppercase">Price</span>
+                      <p className="text-sm font-extrabold text-teal-600 dark:text-teal-400">R {pkg.price.toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
@@ -256,12 +256,12 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
 
         {/* Right Side: Stay Scheduler Block */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-white border-b border-white/15 pb-2">📅 Stay Dates Planner</h3>
+          <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md shadow-xl space-y-4">
+            <h3 className="text-base font-bold text-teal-950 dark:text-white border-b border-teal-100/50 dark:border-white/15 pb-2">📅 Stay Dates Planner</h3>
 
             {!user ? (
               <div className="text-center py-4 space-y-3">
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <p className="text-xs text-teal-900/80 dark:text-zinc-400 leading-relaxed">
                   Sign in or register to lock check-in dates and access package booking options.
                 </p>
                 <Link
@@ -273,20 +273,20 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
               </div>
             ) : datesLocked ? (
               <div className="space-y-4">
-                <div className="rounded-2xl bg-teal-500/5 border border-teal-500/15 p-4 space-y-2">
-                  <div className="flex justify-between text-xs text-zinc-300">
+                <div className="rounded-2xl bg-teal-50 dark:bg-teal-500/5 border border-teal-100 dark:border-teal-500/15 p-4 space-y-2">
+                  <div className="flex justify-between text-xs text-teal-900/80 dark:text-zinc-300">
                     <span>Selected Range:</span>
-                    <span className="font-bold text-white">
+                    <span className="font-bold text-teal-950 dark:text-white">
                       {formatDisplayDate(savedDates!.fromDate)} - {formatDisplayDate(savedDates!.toDate)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs text-zinc-300">
+                  <div className="flex justify-between text-xs text-teal-900/80 dark:text-zinc-300">
                     <span>Stay Duration:</span>
-                    <span className="font-bold text-white">{nights} night(s)</span>
+                    <span className="font-bold text-teal-950 dark:text-white">{nights} night(s)</span>
                   </div>
-                  <div className="flex justify-between text-xs text-zinc-300">
+                  <div className="flex justify-between text-xs text-teal-900/80 dark:text-zinc-300">
                     <span>Estimated Base Cost:</span>
-                    <span className="font-bold text-teal-400">R {baseStayCost.toLocaleString()}</span>
+                    <span className="font-bold text-teal-600 dark:text-teal-400">R {baseStayCost.toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -299,17 +299,17 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
 
                 <button
                   onClick={() => setSavedDates(null)}
-                  className="w-full text-center text-[10px] text-zinc-500 hover:text-zinc-300 font-bold"
+                  className="w-full text-center text-[10px] text-teal-800 dark:text-zinc-500 hover:text-teal-950 dark:hover:text-zinc-300 font-bold"
                 >
                   Change Stay Dates
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-xs text-zinc-400">Select stay ranges to persist to your guest profile.</p>
+                <p className="text-xs text-teal-900/80 dark:text-zinc-400">Select stay ranges to persist to your guest profile.</p>
 
                 {dateError && (
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-2.5 text-center text-xs text-red-400 font-bold">
+                  <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-2.5 text-center text-xs text-red-600 dark:text-red-400 font-bold">
                     ⚠️ {dateError}
                   </div>
                 )}
@@ -342,11 +342,11 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
 
 export default function PropertyDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const unwrappedParams = use(params);
-  
+
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-teal-150 dark:border-white/10" />
       </div>
     }>
       <AuthProvider>

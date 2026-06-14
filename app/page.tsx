@@ -162,7 +162,7 @@ function HomePageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-teal-500/30 selection:text-teal-200">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-teal-500/30 selection:text-teal-200">
       {/* Background gradients */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
         <div className="absolute -top-[40%] -left-[20%] w-[85%] h-[85%] rounded-full bg-emerald-500/5 blur-[130px]" />
@@ -172,13 +172,13 @@ function HomePageContent() {
       <div className="relative max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         {/* Intro Header */}
         <header className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-teal-400 mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50/50 dark:bg-white/5 border border-teal-100 dark:border-white/10 text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-4">
             <span>✨ Guest Booking Flow</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-950 via-zinc-800 to-zinc-600 dark:from-white dark:via-zinc-200 dark:to-zinc-400">
             Llandudno Stays
           </h1>
-          <p className="mt-4 text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
+          <p className="mt-4 text-sm text-teal-900/80 dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
             Begin by choosing your stay dates and authenticating. Your selections will be saved dynamically to configure package checkouts.
           </p>
         </header>
@@ -229,19 +229,19 @@ function HomePageContent() {
         )}
 
         {/* Step 1: Dates Selector */}
-        <div className="w-full max-w-xl mx-auto mb-12 border-b border-white/5 pb-12">
+        <div className="w-full max-w-xl mx-auto mb-12 border-b border-teal-100 dark:border-white/5 pb-12">
           {/* Date Picker Selector */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-md space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="text-teal-400">📅</span> Step 1: Set Stay Dates
+          <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 shadow-xl backdrop-blur-md space-y-4">
+            <h2 className="text-base font-bold text-teal-950 dark:text-white flex items-center gap-2">
+              <span className="text-teal-600 dark:text-teal-400">📅</span> Step 1: Set Stay Dates
             </h2>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-teal-800/80 dark:text-zinc-400 leading-relaxed">
               Define check-in and check-out ranges. Dates must be persistent to user profiles before package selection is enabled.
             </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Check-in Date</label>
+                <label className="mb-1 block text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase tracking-wider font-semibold">Check-in Date</label>
                 <input
                   type="date"
                   value={fromDate}
@@ -253,11 +253,11 @@ function HomePageContent() {
                       setToDate(d.toISOString().split("T")[0]);
                     }
                   }}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none"
+                  className="w-full rounded-xl border border-teal-150 dark:border-white/10 bg-white dark:bg-black/40 px-3.5 py-2.5 text-sm text-teal-950 dark:text-white focus:border-teal-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Nights of Stay</label>
+                <label className="mb-1 block text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase tracking-wider font-semibold">Nights of Stay</label>
                 <input
                   type="number"
                   min="1"
@@ -272,17 +272,17 @@ function HomePageContent() {
                       setToDate(d.toISOString().split("T")[0]);
                     }
                   }}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none"
+                  className="w-full rounded-xl border border-teal-150 dark:border-white/10 bg-white dark:bg-black/40 px-3.5 py-2.5 text-sm text-teal-950 dark:text-white focus:border-teal-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="text-[11px] text-zinc-400">
-              Selected Check-out: <strong className="text-white">{toDate ? formatDisplayDate(toDate) : "-"}</strong>
+            <div className="text-[11px] text-teal-800 dark:text-zinc-400">
+              Selected Check-out: <strong className="text-teal-950 dark:text-white">{toDate ? formatDisplayDate(toDate) : "-"}</strong>
             </div>
 
             {saveStatus && (
-              <div className="text-center text-[10px] font-bold text-zinc-300 bg-white/5 py-2.5 rounded-xl border border-white/5 animate-pulse">
+              <div className="text-center text-[10px] font-bold text-teal-800 dark:text-zinc-300 bg-teal-50/50 dark:bg-white/5 py-2.5 rounded-xl border border-teal-100 dark:border-white/5 animate-pulse">
                 {saveStatus}
               </div>
             )}
@@ -307,19 +307,19 @@ function HomePageContent() {
 
         {/* Step 2: Property Listings Selection */}
         <div className="space-y-6">
-          <h2 className="text-lg font-black text-center text-white flex items-center justify-center gap-2">
+          <h2 className="text-lg font-black text-center text-teal-950 dark:text-white flex items-center justify-center gap-2">
             <span>🏡</span> Select Destination Property
           </h2>
-          <p className="text-xs text-zinc-400 text-center max-w-md mx-auto leading-relaxed">
+          <p className="text-xs text-teal-800/80 dark:text-zinc-400 text-center max-w-md mx-auto leading-relaxed">
             After configuring check-in dates, select a property to view options and book your package.
           </p>
 
           {isLoadingProps ? (
             <div className="flex flex-col items-center py-12 justify-center">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-teal-150 dark:border-white/10" />
             </div>
           ) : properties.length === 0 ? (
-            <div className="text-center py-10 rounded-3xl border border-white/5 bg-white/5 text-zinc-500 text-xs">
+            <div className="text-center py-10 rounded-3xl border border-teal-100 dark:border-white/5 bg-teal-50/15 dark:bg-white/5 text-teal-855/60 dark:text-zinc-500 text-xs">
               No destination properties available.
             </div>
           ) : (
@@ -329,28 +329,28 @@ function HomePageContent() {
                 return (
                   <div
                     key={p.id}
-                    className="group rounded-3xl border border-white/5 bg-white/5 p-6 hover:border-white/10 hover:bg-white/10 transition-all flex flex-col justify-between"
+                    className="group rounded-3xl border border-teal-100/60 dark:border-white/5 bg-teal-50/15 dark:bg-white/5 p-6 hover:border-teal-200 dark:hover:border-white/10 hover:bg-teal-50/30 dark:hover:bg-white/10 transition-all flex flex-col justify-between"
                   >
                     <div>
-                      <span className="inline-block rounded-md bg-teal-500/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-400">
+                      <span className="inline-block rounded-md bg-teal-500/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-600 dark:text-teal-400">
                         Stay Listing
                       </span>
-                      <h3 className="text-lg font-extrabold text-white mt-2 group-hover:text-teal-400 transition-colors">
+                      <h3 className="text-lg font-extrabold text-teal-950 dark:text-white mt-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                         {p.title}
                       </h3>
-                      <p className="text-[10px] font-mono text-zinc-500 mt-0.5">slug: {p.slug}</p>
+                      <p className="text-[10px] font-mono text-teal-800/60 dark:text-zinc-500 mt-0.5">slug: {p.slug}</p>
                       
                       {datesLocked && (
-                        <div className="mt-4 rounded-xl bg-teal-500/5 border border-teal-500/10 p-3 text-[11px] text-teal-300">
-                          📅 Selected: <strong className="text-white">{formatDisplayDate(savedDates.fromDate)}</strong> to <strong className="text-white">{formatDisplayDate(savedDates.toDate)}</strong>
+                        <div className="mt-4 rounded-xl bg-teal-55/5 dark:bg-teal-500/5 border border-teal-100 dark:border-teal-500/10 p-3 text-[11px] text-teal-850 dark:text-teal-300">
+                          📅 Selected: <strong className="text-teal-950 dark:text-white">{formatDisplayDate(savedDates.fromDate)}</strong> to <strong className="text-teal-950 dark:text-white">{formatDisplayDate(savedDates.toDate)}</strong>
                         </div>
                       )}
                     </div>
 
-                    <div className="mt-6 border-t border-white/5 pt-4 flex items-center justify-between">
+                    <div className="mt-6 border-t border-teal-100 dark:border-white/5 pt-4 flex items-center justify-between">
                       <div>
-                        <span className="text-[10px] text-zinc-500 block uppercase">Nightly Cost</span>
-                        <span className="text-base font-black text-teal-400">R {p.basePricePerNight.toLocaleString()}</span>
+                        <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 block uppercase">Nightly Cost</span>
+                        <span className="text-base font-black text-teal-600 dark:text-teal-400">R {p.basePricePerNight.toLocaleString()}</span>
                       </div>
 
                       <Link
@@ -374,8 +374,8 @@ function HomePageContent() {
 export default function HomePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-white/10" />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-teal-150 dark:border-white/10" />
       </div>
     }>
       <AuthProvider>

@@ -181,15 +181,15 @@ export default function CalendarPicker({
       // Styles
       let dayClass = "h-10 w-10 md:h-11 md:w-11 flex items-center justify-center text-xs font-semibold rounded-xl relative cursor-pointer transition-all duration-200 ";
       if (isBooked) {
-        dayClass += "bg-red-500/10 text-red-400 border border-red-500/20 cursor-not-allowed hover:bg-red-500/20";
+        dayClass += "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20 cursor-not-allowed hover:bg-red-100 dark:hover:bg-red-500/20";
       } else if (isSelectedFrom || isSelectedTo) {
-        dayClass += "bg-teal-500 text-black shadow-md shadow-teal-500/20 scale-105 z-10 font-bold";
+        dayClass += "bg-teal-500 text-white shadow-md shadow-teal-500/20 scale-105 z-10 font-bold";
       } else if (isSelectedRange) {
-        dayClass += "bg-teal-500/20 text-teal-200 border border-teal-500/10";
+        dayClass += "bg-teal-100/50 dark:bg-teal-500/20 text-teal-900 dark:text-teal-200 border border-teal-200 dark:border-teal-500/10";
       } else if (isToday) {
-        dayClass += "bg-zinc-800 text-white border border-zinc-700 hover:bg-zinc-700";
+        dayClass += "bg-teal-50/80 dark:bg-zinc-800 text-teal-900 dark:text-white border border-teal-200 dark:border-zinc-700 hover:bg-teal-100 dark:hover:bg-zinc-700";
       } else {
-        dayClass += "bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white";
+        dayClass += "bg-white/40 dark:bg-white/5 text-teal-950 dark:text-zinc-300 hover:bg-teal-50 dark:hover:bg-white/10 hover:text-teal-700 dark:hover:text-white";
       }
 
       days.push(
@@ -222,7 +222,7 @@ export default function CalendarPicker({
     return (
       <div className="space-y-4">
         {/* Month Header */}
-        <div className="text-center font-bold text-sm text-white border-b border-white/5 pb-2.5">
+        <div className="text-center font-bold text-sm text-teal-950 dark:text-white border-b border-teal-100/50 dark:border-white/5 pb-2.5">
           {monthNames[month]} {year}
         </div>
 
@@ -230,7 +230,7 @@ export default function CalendarPicker({
         <div className="grid grid-cols-7 gap-1.5 justify-items-center">
           {/* Weekday headers */}
           {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayName) => (
-            <div key={dayName} className="h-6 w-10 flex items-center justify-center text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+            <div key={dayName} className="h-6 w-10 flex items-center justify-center text-[10px] font-bold text-teal-800/60 dark:text-zinc-500 uppercase tracking-wider">
               {dayName}
             </div>
           ))}
@@ -245,27 +245,27 @@ export default function CalendarPicker({
   const nextMonthVal = currentMonth === 11 ? 0 : currentMonth + 1;
 
   return (
-    <div className="w-full rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-md space-y-6">
+    <div className="w-full rounded-3xl border border-teal-100 dark:border-white/10 bg-teal-50/10 dark:bg-white/5 p-6 shadow-2xl backdrop-blur-md space-y-6">
       {/* Calendar Navigation */}
-      <div className="flex items-center justify-between border-b border-white/5 pb-4">
+      <div className="flex items-center justify-between border-b border-teal-100 dark:border-white/5 pb-4">
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-95"
+          className="h-9 w-9 flex items-center justify-center rounded-xl bg-teal-50/50 dark:bg-white/5 border border-teal-100 dark:border-white/10 text-teal-800 dark:text-zinc-400 hover:text-teal-950 dark:hover:text-white hover:bg-teal-100 dark:hover:bg-white/10 hover:border-teal-200 dark:hover:border-white/20 transition-all active:scale-95"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        <span className="text-xs font-extrabold uppercase tracking-widest text-teal-400 flex items-center gap-2">
+        <span className="text-xs font-extrabold uppercase tracking-widest text-teal-600 dark:text-teal-400 flex items-center gap-2">
           <span>📅</span> Availability calendar
         </span>
 
         <button
           type="button"
           onClick={handleNextMonth}
-          className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-95"
+          className="h-9 w-9 flex items-center justify-center rounded-xl bg-teal-50/50 dark:bg-white/5 border border-teal-100 dark:border-white/10 text-teal-800 dark:text-zinc-400 hover:text-teal-950 dark:hover:text-white hover:bg-teal-100 dark:hover:bg-white/10 hover:border-teal-200 dark:hover:border-white/20 transition-all active:scale-95"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
@@ -280,22 +280,22 @@ export default function CalendarPicker({
       </div>
 
       {/* Date display legend */}
-      <div className="border-t border-white/5 pt-4 flex flex-wrap gap-4 items-center justify-between text-[11px] text-zinc-400">
+      <div className="border-t border-teal-100 dark:border-white/5 pt-4 flex flex-wrap gap-4 items-center justify-between text-[11px] text-teal-800 dark:text-zinc-400">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <div className="w-3.5 h-3.5 rounded bg-teal-500" />
-            <span>Selected</span>
+            <span className="text-teal-950 dark:text-zinc-300">Selected</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-3.5 rounded bg-red-500/10 border border-red-500/30" />
-            <span>Unavailable</span>
+            <div className="w-3.5 h-3.5 rounded bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30" />
+            <span className="text-teal-950 dark:text-zinc-300">Unavailable</span>
           </div>
         </div>
 
         {selectedFromDate && (
-          <div className="text-teal-300 font-medium">
-            Stay: <strong className="text-white">{selectedFromDate}</strong>
-            {selectedToDate ? <> to <strong className="text-white">{selectedToDate}</strong></> : " (Select Check-out)"}
+          <div className="text-teal-600 dark:text-teal-300 font-medium">
+            Stay: <strong className="text-teal-950 dark:text-white">{selectedFromDate}</strong>
+            {selectedToDate ? <> to <strong className="text-teal-950 dark:text-white">{selectedToDate}</strong></> : " (Select Check-out)"}
           </div>
         )}
       </div>

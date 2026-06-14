@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/components/auth";
 
 export default function NavHeader() {
@@ -12,7 +13,7 @@ export default function NavHeader() {
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-black text-teal-950 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-          <span className="text-xl tracking-wider">LLANDUDNO</span>
+          <Image src="/Plek.svg" alt="Simpleplek" width={50} height={50} />
           <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
         </Link>
 

@@ -91,10 +91,11 @@ export async function POST(request: NextRequest) {
     }
 
     const bookingId = body.bookingId;
+    const estimateId = body.estimateId;
     const amountInCentsOverride = body.amountInCentsOverride;
     const descriptionOverride = body.descriptionOverride;
 
-    return processGenerateRequest(type, bookingId, amountInCentsOverride, descriptionOverride);
+    return processGenerateRequest(type, bookingId, estimateId, amountInCentsOverride, descriptionOverride);
   } catch (err: any) {
     console.error("generate_checkout_link post parsing error:", err);
     return NextResponse.json(
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
 async function processGenerateRequest(
   type: string,
   bookingId?: string,
+  estimateId?: string,
   amountInCentsOverride?: number,
   descriptionOverride?: string
 ) {
@@ -133,7 +135,8 @@ async function processGenerateRequest(
       description,
       metadata: {
         packageType: type,
-        bookingId: bookingId || ""
+        bookingId: bookingId || "",
+        estimateId: estimateId || ""
       },
     });
 
@@ -152,3 +155,4 @@ async function processGenerateRequest(
     );
   }
 }
+

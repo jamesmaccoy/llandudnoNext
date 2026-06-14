@@ -11,9 +11,12 @@ export default function LoginPage() {
   // Redirect to home page if already authenticated
   useEffect(() => {
     if (!loading && user) {
-      router.push("/");
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectPath = searchParams.get("redirect") || "/";
+      router.push(redirectPath);
     }
   }, [user, loading, router]);
+
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-zinc-950 px-4 py-16 text-white relative">

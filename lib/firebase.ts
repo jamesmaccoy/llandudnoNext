@@ -443,3 +443,174 @@ export async function isUserAdmin(uid: string, email?: string | null): Promise<b
   }
   return false;
 }
+
+// ==========================================
+// ESTIMATES CRUD
+// ==========================================
+
+export async function createEstimate(data: { propertyId: string; packageId: string | null; customerName: string; customerEmail: string; customerId: string; fromDate: string; toDate: string; total: number; paymentStatus?: string }): Promise<any> {
+  const db = getFirestore();
+  const id = `est_${Math.random().toString(36).substring(2, 11)}`;
+  const token = Math.random().toString(36).substring(2, 12);
+  const estimateRecord = {
+    paymentStatus: "pending",
+    token,
+    guests: [],
+    createdAt: new Date().toISOString(),
+    ...data,
+    id
+  };
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.estimates = dbData.estimates || [];
+    dbData.estimates.push(estimateRecord);
+    writeMockDb(dbData);
+    return estimateRecord;
+  }
+
+  await db.collection("estimates").doc(id).set(estimateRecord);
+  return estimateRecord;
+}
+
+export async function getEstimate(id: string): Promise<any | null> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    const estimates = dbData.estimates || [];
+    return estimates.find((e: any) => e.id === id) || null;
+  }
+  try {
+    const doc = await db.collection("estimates").doc(id).get();
+    if (doc.exists) return doc.data();
+  } catch (err) {
+    console.error(`[Firebase] getEstimate error for id ${id}:`, err);
+  }
+  return null;
+}
+
+export async function getEstimateByToken(token: string): Promise<any | null> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    const estimates = dbData.estimates || [];
+    return estimates.find((e: any) => e.token === token) || null;
+  }
+  try {
+    const snap = await db.collection("estimates").where("token", "==", token).limit(1).get();
+    if (!snap.empty) return snap.docs[0].data();
+  } catch (err) {
+    console.error(`[Firebase] getEstimateByToken error:`, err);
+  }
+  return null;
+}
+
+export async function updateEstimateStatus(id: string, paymentStatus: string): Promise<boolean> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.estimates = dbData.estimates || [];
+    const index = dbData.estimates.findIndex((e: any) => e.id === id);
+    if (index >= 0) {
+      dbData.estimates[index].paymentStatus = paymentStatus;
+      writeMockDb(dbData);
+      return true;
+    }
+    return false;
+  }
+  try {
+    await db.collection("estimates").doc(id).update({ paymentStatus });
+    return true;
+  } catch (err) {
+    console.error(`[Firebase] updateEstimateStatus error:`, err);
+    return false;
+  }
+}
+
+export async function addGuestToEstimate(id: string, guestUid: string): Promise<boolean> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.estimates = dbData.estimates || [];
+    const index = dbData.estimates.findIndex((e: any) => e.id === id);
+    if (index >= 0) {
+      const guests = dbData.estimates[index].guests || [];
+      if (!guests.includes(guestUid)) {
+        guests.push(guestUid);
+        dbData.estimates[index].guests = guests;
+        writeMockDb(dbData);
+      }
+      return true;
+    }
+    return false;
+  }
+  try {
+    const docRef = db.collection("estimates").doc(id);
+    const doc = await docRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+      const guests = data?.guests || [];
+      if (!guests.includes(guestUid)) {
+        guests.push(guestUid);
+        await docRef.update({ guests });
+      }
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error(`[Firebase] addGuestToEstimate error:`, err);
+    return false;
+  }
+}
+
+export async function getLatestEstimateForUser(userId: string): Promise<any | null> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    const estimates = dbData.estimates || [];
+    const userEstimates = estimates.filter((e: any) => 
+      e.customerId === userId || (e.guests && e.guests.includes(userId))
+    );
+    if (userEstimates.length === 0) return null;
+    userEstimates.sort((a: any, b: any) => 
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    return userEstimates[0];
+  }
+  try {
+    const snapCustomer = await db.collection("estimates")
+      .where("customerId", "==", userId)
+      .orderBy("createdAt", "desc")
+      .limit(1)
+      .get();
+      
+    const snapGuest = await db.collection("estimates")
+      .where("guests", "array-contains", userId)
+      .orderBy("createdAt", "desc")
+      .limit(1)
+      .get();
+      
+    const estCustomer = !snapCustomer.empty ? snapCustomer.docs[0].data() : null;
+    const estGuest = !snapGuest.empty ? snapGuest.docs[0].data() : null;
+    
+    if (estCustomer && estGuest) {
+      const timeCustomer = new Date(estCustomer.createdAt || 0).getTime();
+      const timeGuest = new Date(estGuest.createdAt || 0).getTime();
+      return timeCustomer > timeGuest ? estCustomer : estGuest;
+    }
+    return estCustomer || estGuest;
+  } catch (err) {
+    console.error(`[Firebase] getLatestEstimateForUser error:`, err);
+    const dbData = readMockDb();
+    const estimates = dbData.estimates || [];
+    const userEstimates = estimates.filter((e: any) => 
+      e.customerId === userId || (e.guests && e.guests.includes(userId))
+    );
+    if (userEstimates.length === 0) return null;
+    userEstimates.sort((a: any, b: any) => 
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    return userEstimates[0];
+  }
+}
+

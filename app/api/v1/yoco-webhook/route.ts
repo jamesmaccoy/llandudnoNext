@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateBookingStatus } from "@/lib/firebase";
+import { updateBookingStatus, getEstimate, updateEstimateStatus, createBooking, listBookings } from "@/lib/firebase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,22 +10,57 @@ export async function POST(request: NextRequest) {
     const payload = body.payload || body;
     const metadata = payload.metadata || {};
     
-    // Defensive extraction of booking ID
+    // Defensive extraction of booking ID & estimate ID
     const bookingId = metadata.bookingId || payload.bookingId || body.bookingId;
+    const estimateId = metadata.estimateId || payload.estimateId || body.estimateId;
 
-    if (!bookingId) {
-      console.warn("[Yoco Webhook] No bookingId found in webhook payload.");
-      return NextResponse.json({ success: true, message: "Webhook received, but no bookingId was found." });
+    if (!bookingId && !estimateId) {
+      console.warn("[Yoco Webhook] No bookingId or estimateId found in webhook payload.");
+      return NextResponse.json({ success: true, message: "Webhook received, but no booking or estimate identifier was found." });
     }
 
     if (eventType === "payment.succeeded" || eventType === "checkout.succeeded" || eventType === "charge.succeeded") {
-      console.log(`[Yoco Webhook] Payment succeeded for booking ${bookingId}`);
-      await updateBookingStatus(bookingId, "paid");
+      if (bookingId) {
+        console.log(`[Yoco Webhook] Payment succeeded for booking ${bookingId}`);
+        await updateBookingStatus(bookingId, "paid");
+      } else if (estimateId) {
+        console.log(`[Yoco Webhook] Payment succeeded for estimate ${estimateId}. Creating booking.`);
+        const estimate = await getEstimate(estimateId);
+        if (estimate) {
+          const existingBookings = await listBookings();
+          const alreadyExists = existingBookings.some((b: any) => b.estimateId === estimateId);
+          if (!alreadyExists) {
+            await createBooking({
+              propertyId: estimate.propertyId,
+              packageId: estimate.packageId || null,
+              customerName: estimate.customerName,
+              customerEmail: estimate.customerEmail,
+              fromDate: estimate.fromDate,
+              toDate: estimate.toDate,
+              total: Number(estimate.total),
+              paymentStatus: "paid",
+              estimateId: estimate.id,
+              guests: estimate.guests || []
+            } as any);
+            await updateEstimateStatus(estimateId, "paid");
+            console.log(`[Yoco Webhook] Booking created successfully from estimate ${estimateId}`);
+          } else {
+            console.log(`[Yoco Webhook] Booking already exists for estimate ${estimateId}`);
+          }
+        } else {
+          console.warn(`[Yoco Webhook] Estimate ${estimateId} not found.`);
+        }
+      }
     } else if (eventType === "payment.failed" || eventType === "checkout.failed" || eventType === "charge.failed") {
-      console.log(`[Yoco Webhook] Payment failed for booking ${bookingId}`);
-      await updateBookingStatus(bookingId, "failed");
+      if (bookingId) {
+        console.log(`[Yoco Webhook] Payment failed for booking ${bookingId}`);
+        await updateBookingStatus(bookingId, "failed");
+      } else if (estimateId) {
+        console.log(`[Yoco Webhook] Payment failed for estimate ${estimateId}`);
+        await updateEstimateStatus(estimateId, "failed");
+      }
     } else {
-      console.log(`[Yoco Webhook] Unhandled event type: ${eventType} for booking ${bookingId}`);
+      console.log(`[Yoco Webhook] Unhandled event type: ${eventType}`);
     }
 
     return NextResponse.json({ success: true });
@@ -34,3 +69,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+

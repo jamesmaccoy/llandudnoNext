@@ -21,6 +21,7 @@ function HomePageContent() {
   const packageType = searchParams.get("type");
   const amountPaid = searchParams.get("amount");
   const bookingId = searchParams.get("bookingId");
+  const estimateId = searchParams.get("estimateId");
 
   const { user, loading: authLoading } = useAuth();
 
@@ -36,10 +37,11 @@ function HomePageContent() {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [nights, setNights] = useState<number>(3);
   const [hasUpdatedStatus, setHasUpdatedStatus] = useState(false);
+  const [latestEstimate, setLatestEstimate] = useState<any | null>(null);
 
   // Client-side payment status update fallback (useful for localhost testing where webhooks can't reach)
   useEffect(() => {
-    if (!bookingId || !paymentStatus || hasUpdatedStatus) return;
+    if ((!bookingId && !estimateId) || !paymentStatus || hasUpdatedStatus) return;
 
     const updateStatus = async () => {
       setHasUpdatedStatus(true);
@@ -53,18 +55,27 @@ function HomePageContent() {
           statusToSet = "cancelled";
         }
 
-        await fetch("/api/bookings", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bookingId, paymentStatus: statusToSet })
-        });
+        if (estimateId && statusToSet === "paid") {
+          await fetch("/api/bookings/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ estimateId, paymentStatus: "paid" })
+          });
+        } else if (bookingId) {
+          await fetch("/api/bookings", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingId, paymentStatus: statusToSet })
+          });
+        }
       } catch (err) {
-        console.error("Failed to sync booking status client-side fallback:", err);
+        console.error("Failed to sync booking/estimate status client-side fallback:", err);
       }
     };
 
     updateStatus();
-  }, [bookingId, paymentStatus, hasUpdatedStatus]);
+  }, [bookingId, estimateId, paymentStatus, hasUpdatedStatus]);
+
 
   // Load properties
   useEffect(() => {
@@ -116,6 +127,28 @@ function HomePageContent() {
     };
     fetchSavedDates();
   }, [user, authLoading]);
+
+  // Load latest estimate
+  useEffect(() => {
+    if (!user || !savedDates) {
+      setLatestEstimate(null);
+      return;
+    }
+
+    const fetchLatestEstimate = async () => {
+      try {
+        const res = await fetch(`/api/estimates/latest?userId=${user.uid}`);
+        const result = await res.json();
+        if (result.success && result.data) {
+          setLatestEstimate(result.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch latest estimate:", err);
+      }
+    };
+    fetchLatestEstimate();
+  }, [user, savedDates]);
+
 
   const handleSaveDates = async () => {
     if (!user) {
@@ -280,6 +313,42 @@ function HomePageContent() {
             <div className="text-[11px] text-teal-800 dark:text-zinc-400">
               Selected Check-out: <strong className="text-teal-950 dark:text-white">{toDate ? formatDisplayDate(toDate) : "-"}</strong>
             </div>
+
+            {/* Latest Estimate Display */}
+            {savedDates && latestEstimate && (
+              <div className="mt-4 p-4 rounded-2xl bg-teal-500/5 dark:bg-white/5 border border-teal-500/10 dark:border-white/10 space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                    📌 Your Latest Estimate
+                  </span>
+                  <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                    latestEstimate.paymentStatus === "paid" 
+                      ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                      : "bg-orange-50/50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                  }`}>
+                    {latestEstimate.paymentStatus}
+                  </span>
+                </div>
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-teal-950 dark:text-white">
+                    Stay at {latestEstimate.propertyId === "shack" ? "The Shack" : latestEstimate.propertyId === "cottage" ? "The Cottage" : "Llandudno Stay"}
+                  </p>
+                  <p className="text-teal-800/80 dark:text-zinc-400 text-[11px]">
+                    Dates: {formatDisplayDate(latestEstimate.fromDate)} - {formatDisplayDate(latestEstimate.toDate)}
+                  </p>
+                  <p className="text-teal-800/80 dark:text-zinc-400 text-[11px]">
+                    Total: <strong className="text-teal-600 dark:text-teal-400">R {latestEstimate.total.toLocaleString()}</strong>
+                  </p>
+                </div>
+                <Link
+                  href={`/estimate/${latestEstimate.id}`}
+                  className="mt-2 block w-full text-center rounded-xl bg-teal-550/10 dark:bg-white/5 hover:bg-teal-500/10 py-2 text-xs font-bold text-teal-600 dark:text-teal-400 transition-all border border-teal-500/20"
+                >
+                  View, Share or Pay Estimate →
+                </Link>
+              </div>
+            )}
+
 
             {saveStatus && (
               <div className="text-center text-[10px] font-bold text-teal-800 dark:text-zinc-300 bg-teal-50/50 dark:bg-white/5 py-2.5 rounded-xl border border-teal-100 dark:border-white/5 animate-pulse">

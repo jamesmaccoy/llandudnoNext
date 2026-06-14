@@ -269,11 +269,11 @@ function BookingsCheckoutContent() {
     }
 
     setIsSubmitting(true);
-    setCheckoutLog(["1. Validating stay selection...", "2. Registering booking ledger entries..."]);
+    setCheckoutLog(["1. Validating stay selection...", "2. Registering stay estimate details..."]);
 
     try {
-      // POST booking
-      const bookRes = await fetch("/api/bookings", {
+      // POST estimate
+      const estRes = await fetch("/api/estimates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -281,20 +281,21 @@ function BookingsCheckoutContent() {
           packageId: selectedPackageId || null,
           customerName: user.displayName || user.email?.split("@")[0] || "Authenticated Guest",
           customerEmail: user.email || "",
+          customerId: user.uid,
           fromDate: from.toISOString(),
           toDate: to.toISOString(),
           total: finalTotal
         })
       });
 
-      const bookResult = await bookRes.json();
-      if (!bookRes.ok || !bookResult.success) {
-        throw new Error(bookResult.error || "Failed to commit booking.");
+      const estResult = await estRes.json();
+      if (!estRes.ok || !estResult.success) {
+        throw new Error(estResult.error || "Failed to log stay estimate.");
       }
 
       setCheckoutLog(prev => [
         ...prev,
-        "3. ✅ Booking logged successfully. Preparing payment details...",
+        "3. ✅ Estimate saved successfully. Preparing payment details...",
       ]);
 
       const targetType = selectedPackage ? selectedPackage.yocoId : "shack_stack";
@@ -305,7 +306,7 @@ function BookingsCheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: targetType,
-          bookingId: bookResult.booking.id,
+          estimateId: estResult.estimate.id,
           amountInCentsOverride: Math.round(finalTotal * 100),
           descriptionOverride: selectedPackage ? selectedPackage.name : 'Stay Booking'
         })
@@ -330,6 +331,7 @@ function BookingsCheckoutContent() {
       setIsSubmitting(false);
     }
   };
+
 
   if (!propertyId) {
     const displayBookings = bookingsList.filter((b) => {

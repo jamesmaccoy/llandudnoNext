@@ -100,6 +100,40 @@ function EditPropertyContent({ id }: { id: string }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this property? All associated packages will also be deleted.")) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setStatusMessage(null);
+    
+    try {
+      const response = await fetch(`/api/posts/${id}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-id": user?.uid || "",
+          "x-user-email": user?.email || ""
+        }
+      });
+      
+      const resJson = await response.json();
+      if (!response.ok || !resJson.success) {
+        throw new Error(resJson.error || "Failed to delete property.");
+      }
+      
+      setStatusMessage({ type: "success", text: "Property deleted successfully!" });
+      setTimeout(() => {
+        router.push("/admin/properties");
+      }, 1500);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setStatusMessage({ type: "error", text: error.message || "An error occurred." });
+      setIsSubmitting(false);
+    }
+  };
+
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
@@ -244,13 +278,23 @@ function EditPropertyContent({ id }: { id: string }) {
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 py-3 text-center text-xs font-bold text-white shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-95 transition-all"
-              >
-                {isSubmitting ? "Saving changes..." : "Save Changes"}
-              </button>
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-grow rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 py-3 text-center text-xs font-bold text-white shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-95 transition-all"
+                >
+                  {isSubmitting ? "Saving changes..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3 text-center text-xs font-bold text-red-400 hover:bg-red-550 hover:text-white transition-all active:scale-95"
+                >
+                  Delete
+                </button>
+              </div>
             </form>
           ) : (
             <div className="text-center py-6 text-zinc-550 text-xs font-semibold">

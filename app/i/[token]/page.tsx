@@ -32,13 +32,33 @@ function InviteLandingContent({ params }: InvitePageProps) {
       setStatus("Processing invitation link...");
 
       try {
-        const res = await fetch("/api/estimates/accept-invite", {
+        let res = await fetch("/api/estimates/accept-invite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, userId: user.uid })
         });
 
-        const result = await res.json();
+        let result = await res.json();
+
+        if (res.status === 404) {
+          // If the token was not an estimate, try checking if it's a booking invite
+          res = await fetch("/api/bookings/accept-invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, userId: user.uid })
+          });
+          result = await res.json();
+
+          if (!res.ok || !result.success) {
+            throw new Error(result.error || "Failed to accept booking invitation.");
+          }
+
+          setStatus("✅ Booking invite accepted! Redirecting to your dashboard...");
+          setTimeout(() => {
+            router.push("/bookings");
+          }, 1500);
+          return;
+        }
 
         if (!res.ok || !result.success) {
           throw new Error(result.error || "Failed to accept invite.");

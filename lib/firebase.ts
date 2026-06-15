@@ -173,6 +173,46 @@ export async function getProperty(idOrSlug: string): Promise<any> {
   return null;
 }
 
+export async function deleteProperty(id: string): Promise<boolean> {
+  const db = getFirestore();
+  const targetId = id.trim();
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.properties = dbData.properties || [];
+    dbData.packages = dbData.packages || [];
+    
+    const initialLength = dbData.properties.length;
+    dbData.properties = dbData.properties.filter((p: any) => p.id !== targetId);
+    
+    // Cascade delete packages associated with this property
+    dbData.packages = dbData.packages.filter((pkg: any) => pkg.propertyId !== targetId);
+    
+    writeMockDb(dbData);
+    return dbData.properties.length < initialLength;
+  }
+
+  try {
+    // Delete property document
+    await db.collection("properties").doc(targetId).delete();
+    
+    // Delete packages associated with this property
+    const packagesSnap = await db.collection("packages").where("propertyId", "==", targetId).get();
+    if (!packagesSnap.empty) {
+      const batch = db.batch();
+      packagesSnap.docs.forEach((doc: any) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
+    return true;
+  } catch (err) {
+    console.error(`[Firebase] deleteProperty error for id ${targetId}:`, err);
+    return false;
+  }
+}
+
+
 // ==========================================
 // PACKAGES CRUD
 // ==========================================
@@ -283,6 +323,31 @@ export async function listPackageDocIds(limit = 10): Promise<string[]> {
     return readMockDb().packages.map((p: any) => p.id).slice(0, limit);
   }
 }
+
+export async function deletePackage(id: string): Promise<boolean> {
+  const db = getFirestore();
+  const targetId = id.trim();
+
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.packages = dbData.packages || [];
+    
+    const initialLength = dbData.packages.length;
+    dbData.packages = dbData.packages.filter((pkg: any) => pkg.id !== targetId);
+    
+    writeMockDb(dbData);
+    return dbData.packages.length < initialLength;
+  }
+
+  try {
+    await db.collection("packages").doc(targetId).delete();
+    return true;
+  } catch (err) {
+    console.error(`[Firebase] deletePackage error for id ${targetId}:`, err);
+    return false;
+  }
+}
+
 
 // ==========================================
 // BOOKINGS CRUD
@@ -619,4 +684,57 @@ export async function getLatestEstimateForUser(userId: string): Promise<any | nu
     return userEstimates[0];
   }
 }
+
+export async function addGuestToBooking(id: string, guestUid: string): Promise<boolean> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.bookings = dbData.bookings || [];
+    const index = dbData.bookings.findIndex((b: any) => b.id === id);
+    if (index >= 0) {
+      const guests = dbData.bookings[index].guests || [];
+      if (!guests.includes(guestUid)) {
+        guests.push(guestUid);
+        dbData.bookings[index].guests = guests;
+        writeMockDb(dbData);
+      }
+      return true;
+    }
+    return false;
+  }
+  try {
+    const docRef = db.collection("bookings").doc(id);
+    const doc = await docRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+      const guests = data?.guests || [];
+      if (!guests.includes(guestUid)) {
+        guests.push(guestUid);
+        await docRef.update({ guests });
+      }
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error(`[Firebase] addGuestToBooking error:`, err);
+    return false;
+  }
+}
+
+export async function getBookingByToken(token: string): Promise<any | null> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    const bookings = dbData.bookings || [];
+    return bookings.find((b: any) => b.token === token) || null;
+  }
+  try {
+    const snap = await db.collection("bookings").where("token", "==", token).limit(1).get();
+    if (!snap.empty) return snap.docs[0].data();
+  } catch (err) {
+    console.error(`[Firebase] getBookingByToken error:`, err);
+  }
+  return null;
+}
+
 

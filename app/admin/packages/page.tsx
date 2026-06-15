@@ -153,6 +153,34 @@ export default function AdminPackagesPage() {
     }
   };
 
+  const handleDeletePackage = async (packageId: string) => {
+    if (!window.confirm("Are you sure you want to delete this package deal?")) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/packages/${packageId}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-id": user?.uid || "",
+          "x-user-email": user?.email || ""
+        }
+      });
+      
+      const resJson = await response.json();
+      if (!response.ok || !resJson.success) {
+        throw new Error(resJson.error || "Failed to delete package.");
+      }
+      
+      // Reload packages
+      fetchPackages(selectedPropertyId);
+    } catch (err: unknown) {
+      const error = err as Error;
+      alert(error.message || "An error occurred while deleting the package.");
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
@@ -425,9 +453,17 @@ export default function AdminPackagesPage() {
                         </p>
                       )}
 
-                      <div className="flex gap-4 text-[10px] text-zinc-500 border-t border-white/5 pt-3">
-                        <div>Multiplier: <strong className="text-zinc-300">{pkg.multiplier}x</strong></div>
-                        <div>Base Flat Rate: <strong className="text-zinc-300">R {pkg.baseRate}</strong></div>
+                      <div className="flex justify-between items-center border-t border-white/5 pt-3">
+                        <div className="flex gap-4 text-[10px] text-zinc-500">
+                          <div>Multiplier: <strong className="text-zinc-300">{pkg.multiplier}x</strong></div>
+                          <div>Base Flat Rate: <strong className="text-zinc-300">R {pkg.baseRate}</strong></div>
+                        </div>
+                        <button
+                          onClick={() => handleDeletePackage(pkg.id)}
+                          className="rounded bg-red-500/10 border border-red-500/20 px-2.5 py-1 text-[9px] font-bold text-red-400 hover:bg-red-550 hover:text-white transition-all active:scale-95"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}

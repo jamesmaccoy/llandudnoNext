@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProperty, createProperty, isUserAdmin } from "@/lib/firebase";
+import { getProperty, createProperty, deleteProperty, isUserAdmin } from "@/lib/firebase";
 
 export async function GET(
   request: NextRequest,
@@ -60,3 +60,31 @@ export async function PUT(
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Check admin permissions
+    const userId = request.headers.get("x-user-id");
+    const email = request.headers.get("x-user-email");
+    if (!userId || !(await isUserAdmin(userId, email))) {
+      return NextResponse.json({ success: false, error: "Unauthorized access: admin privileges required." }, { status: 403 });
+    }
+
+    const success = await deleteProperty(id);
+    if (!success) {
+      return NextResponse.json({ success: false, error: "Property not found or delete failed." }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: "Property deleted successfully." });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("DELETE /api/posts/[id] error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+

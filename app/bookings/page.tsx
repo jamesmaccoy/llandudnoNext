@@ -38,6 +38,8 @@ interface Booking {
   toDate: string;
   total: number;
   paymentStatus: string;
+  token?: string;
+  guests?: string[];
 }
 
 function BookingsCheckoutContent() {
@@ -336,7 +338,9 @@ function BookingsCheckoutContent() {
   if (!propertyId) {
     const displayBookings = bookingsList.filter((b) => {
       if (viewMode === "my") {
-        return b.customerEmail?.toLowerCase() === user.email?.toLowerCase();
+        const isCustomer = b.customerEmail?.toLowerCase() === user.email?.toLowerCase();
+        const isGuest = b.guests && b.guests.includes(user.uid);
+        return isCustomer || isGuest;
       }
       return true;
     });
@@ -486,6 +490,44 @@ function BookingsCheckoutContent() {
                         <span className="font-bold text-teal-950 dark:text-white mt-1 block">{checkOut}</span>
                       </div>
                     </div>
+
+                    {/* Guest Invite/List Section */}
+                    {(b.paymentStatus === "paid" || b.paymentStatus === "success") && (
+                      <div className="border-t border-teal-100/50 dark:border-white/5 pt-4 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                            Invited Guests
+                          </span>
+                          {b.token && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const inviteUrl = `${window.location.origin}/i/${b.token}`;
+                                navigator.clipboard.writeText(inviteUrl);
+                                alert("📋 Invite URL copied to clipboard: " + inviteUrl);
+                              }}
+                              className="flex items-center gap-1 rounded bg-teal-500/10 px-2 py-1 text-[9px] font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-550/15 transition-all"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l5.57 3.285m-5.57-3.285l5.57-3.285M13.5 18.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM13.5 9.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />
+                              </svg>
+                              Invite Guests
+                            </button>
+                          )}
+                        </div>
+                        {b.guests && b.guests.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {b.guests.map((gUid, idx) => (
+                              <span key={idx} className="rounded bg-teal-55/10 dark:bg-white/5 border border-teal-150/40 px-2 py-0.5 text-[9px] font-mono text-teal-950 dark:text-zinc-300">
+                                👤 {gUid === user.uid ? "You" : gUid.substring(0, 8) + "..."}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-teal-800/60 dark:text-zinc-500 italic">No guests joined this stay yet.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-6 border-t border-teal-100 dark:border-white/5 pt-4 flex items-center justify-between text-xs">

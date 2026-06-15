@@ -20,6 +20,7 @@ interface CalendarPickerProps {
   selectedToDate: string; // YYYY-MM-DD
   bookings: Booking[];
   onChange: (fromDate: string, toDate: string) => void;
+  singleMonth?: boolean;
 }
 
 export default function CalendarPicker({
@@ -27,6 +28,7 @@ export default function CalendarPicker({
   selectedToDate,
   bookings,
   onChange,
+  singleMonth = false,
 }: CalendarPickerProps) {
   // Current calendar month view (starts with the check-in date's month or current month)
   const initialDate = selectedFromDate ? new Date(selectedFromDate) : new Date();
@@ -73,7 +75,7 @@ export default function CalendarPicker({
       if (b.paymentStatus === "failed" || b.paymentStatus === "refunded") continue;
       const start = new Date(b.fromDate.split("T")[0]); // compare dates only
       const end = new Date(b.toDate.split("T")[0]);
-      
+
       const startTime = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
       const endTime = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
 
@@ -105,7 +107,7 @@ export default function CalendarPicker({
     // Empty cells for offset before the first day of the month
     for (let i = 0; i < firstDayIndex; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-10 w-10 md:h-11 md:w-11" />
+        <div key={`empty-${i}`} className="w-full aspect-square max-w-[44px]" />
       );
     }
 
@@ -114,10 +116,10 @@ export default function CalendarPicker({
       const dateStr = formatDateString(year, month, day);
       const booking = getBookingForDate(year, month, day);
       const isBooked = !!booking;
-      
+
       const isSelectedFrom = selectedFromDate === dateStr;
       const isSelectedTo = selectedToDate === dateStr;
-      
+
       // Check if day is inside selected range
       const isSelectedRange = (() => {
         if (!selectedFromDate || !selectedToDate) return false;
@@ -141,7 +143,7 @@ export default function CalendarPicker({
             let hasOverlap = false;
             let current = new Date(selectedFromDate);
             const target = new Date(dateStr);
-            
+
             while (current < target) {
               const checkB = getBookingForDate(current.getFullYear(), current.getMonth(), current.getDate());
               if (checkB) {
@@ -179,7 +181,7 @@ export default function CalendarPicker({
       }
 
       // Styles
-      let dayClass = "h-10 w-10 md:h-11 md:w-11 flex items-center justify-center text-xs font-semibold rounded-xl relative cursor-pointer transition-all duration-200 ";
+      let dayClass = "w-full aspect-square max-w-[44px] flex items-center justify-center text-xs font-semibold rounded-xl relative cursor-pointer transition-all duration-200 ";
       if (isBooked) {
         dayClass += "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20 cursor-not-allowed hover:bg-red-100 dark:hover:bg-red-500/20";
       } else if (isSelectedFrom || isSelectedTo) {
@@ -201,7 +203,7 @@ export default function CalendarPicker({
             className={dayClass}
           >
             {day}
-            
+
             {/* Visual indicator for booked/blocked dates */}
             {isBooked && (
               <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-red-400 opacity-60" />
@@ -230,7 +232,7 @@ export default function CalendarPicker({
         <div className="grid grid-cols-7 gap-1.5 justify-items-center">
           {/* Weekday headers */}
           {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayName) => (
-            <div key={dayName} className="h-6 w-10 flex items-center justify-center text-[10px] font-bold text-teal-800/60 dark:text-zinc-500 uppercase tracking-wider">
+            <div key={dayName} className="h-6 w-full max-w-[44px] flex items-center justify-center text-[10px] font-bold text-teal-800/60 dark:text-zinc-500 uppercase tracking-wider">
               {dayName}
             </div>
           ))}
@@ -274,9 +276,9 @@ export default function CalendarPicker({
       </div>
 
       {/* Responsive grids for two months */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+      <div className={`grid gap-8 ${singleMonth ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 md:gap-12"}`}>
         {renderMonth(currentYear, currentMonth)}
-        {renderMonth(nextMonthYear, nextMonthVal)}
+        {!singleMonth && renderMonth(nextMonthYear, nextMonthVal)}
       </div>
 
       {/* Date display legend */}

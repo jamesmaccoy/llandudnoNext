@@ -380,6 +380,7 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
                   selectedFromDate={fromDate}
                   selectedToDate={toDate}
                   bookings={bookings}
+                  singleMonth={true}
                   onChange={(start, end) => {
                     setFromDate(start);
                     setToDate(end);

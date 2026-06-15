@@ -679,6 +679,7 @@ function BookingsCheckoutContent() {
                     selectedFromDate={savedDates?.fromDate.split("T")[0] || ""}
                     selectedToDate={savedDates?.toDate.split("T")[0] || ""}
                     bookings={bookingsList}
+                    singleMonth={true}
                     onChange={handleUpdateDates}
                   />
                 </div>

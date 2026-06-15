@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth, AuthProvider } from "@/components/auth";
 import Link from "next/link";
 import CalendarPicker from "@/components/CalendarPicker";
 import { formatDisplayDate } from "@/lib/utils";
-import Script from "next/script";
 
 interface Property {
   id: string;
@@ -43,7 +42,6 @@ interface Booking {
 }
 
 function BookingsCheckoutContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get("propertyId") || "";
 
@@ -64,6 +62,7 @@ function BookingsCheckoutContent() {
 
   // Admin and filter mode states
   const [viewMode, setViewMode] = useState<"my" | "all">("my");
+
 
   // Load property, user dates, and packages
   useEffect(() => {
@@ -87,8 +86,9 @@ function BookingsCheckoutContent() {
           const pkgResult = await pkgRes.json();
           if (pkgResult.success && pkgResult.data) {
             setPackages(pkgResult.data);
-            if (pkgResult.data.length > 0) {
-              setSelectedPackageId(pkgResult.data[0].id);
+            const corePkgs = pkgResult.data.filter((p: PackageData) => p.category !== "addon");
+            if (corePkgs.length > 0) {
+              setSelectedPackageId(corePkgs[0].id);
             }
           }
 
@@ -104,6 +104,12 @@ function BookingsCheckoutContent() {
           const bksResult = await bksRes.json();
           if (bksResult.success && bksResult.data) {
             setBookingsList(bksResult.data);
+          }
+          // Fetch all packages for the dashboard to render addons
+          const pkgRes = await fetch("/api/packages");
+          const pkgResult = await pkgRes.json();
+          if (pkgResult.success && pkgResult.data) {
+            setPackages(pkgResult.data);
           }
         }
       } catch (err) {
@@ -328,11 +334,13 @@ function BookingsCheckoutContent() {
         window.location.href = linkResult.data.redirectUrl;
       }, 1200);
 
-    } catch (err: any) {
-      setCheckoutLog(prev => [...prev, `❌ Error: ${err.message}`]);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setCheckoutLog(prev => [...prev, `❌ Error: ${error.message}`]);
       setIsSubmitting(false);
     }
   };
+
 
 
   if (!propertyId) {
@@ -491,43 +499,7 @@ function BookingsCheckoutContent() {
                       </div>
                     </div>
 
-                    {/* Guest Invite/List Section */}
-                    {(b.paymentStatus === "paid" || b.paymentStatus === "success") && (
-                      <div className="border-t border-teal-100/50 dark:border-white/5 pt-4 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-                            Invited Guests
-                          </span>
-                          {b.token && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const inviteUrl = `${window.location.origin}/i/${b.token}`;
-                                navigator.clipboard.writeText(inviteUrl);
-                                alert("📋 Invite URL copied to clipboard: " + inviteUrl);
-                              }}
-                              className="flex items-center gap-1 rounded bg-teal-500/10 px-2 py-1 text-[9px] font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-550/15 transition-all"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l5.57 3.285m-5.57-3.285l5.57-3.285M13.5 18.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM13.5 9.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />
-                              </svg>
-                              Invite Guests
-                            </button>
-                          )}
-                        </div>
-                        {b.guests && b.guests.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {b.guests.map((gUid, idx) => (
-                              <span key={idx} className="rounded bg-teal-55/10 dark:bg-white/5 border border-teal-150/40 px-2 py-0.5 text-[9px] font-mono text-teal-950 dark:text-zinc-300">
-                                👤 {gUid === user.uid ? "You" : gUid.substring(0, 8) + "..."}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-[10px] text-teal-800/60 dark:text-zinc-500 italic">No guests joined this stay yet.</p>
-                        )}
-                      </div>
-                    )}
+
                   </div>
 
                   <div className="mt-6 border-t border-teal-100 dark:border-white/5 pt-4 flex items-center justify-between text-xs">
@@ -537,7 +509,13 @@ function BookingsCheckoutContent() {
                           Guest: <strong className="text-teal-950 dark:text-white">{b.customerName}</strong> <span className="text-teal-800/60 dark:text-zinc-500 font-mono text-[9px]">({b.customerEmail})</span>
                         </div>
                       )}
-                      <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase">Duration</span>
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="inline-flex rounded-lg bg-teal-500/10 border border-teal-500/20 px-2.5 py-1 text-[10px] font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-500 hover:text-white transition-all active:scale-95 mb-2.5"
+                      >
+                        View Details →
+                      </Link>
+                      <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase block">Duration</span>
                       <span className="font-bold text-teal-950 dark:text-white block mt-0.5">{stayNights} night(s) stay</span>
                     </div>
                     <div className="text-right">
@@ -607,7 +585,7 @@ function BookingsCheckoutContent() {
                 onChange={(e) => setSelectedPackageId(e.target.value)}
                 className="w-full rounded-xl border border-teal-150 dark:border-white/10 bg-white dark:bg-black/40 px-4 py-3 text-sm text-teal-950 dark:text-white focus:border-teal-500 focus:outline-none"
               >
-                {packages.map((pkg) => (
+                {packages.filter(p => p.category !== "addon").map((pkg) => (
                   <option key={pkg.id} value={pkg.id} className="bg-white dark:bg-zinc-950 text-teal-950 dark:text-white">
                     {pkg.name}
                   </option>

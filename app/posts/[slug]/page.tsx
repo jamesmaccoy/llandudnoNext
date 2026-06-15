@@ -272,11 +272,11 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
           <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md space-y-4">
             <h3 className="text-base font-bold text-teal-950 dark:text-white">Available Packages for this Listing</h3>
 
-            {packages.length === 0 ? (
+            {packages.filter(pkg => pkg.category !== "addon").length === 0 ? (
               <p className="text-xs text-teal-800/60 dark:text-zinc-500">No specific packages config created for this property yet.</p>
             ) : (
               <div className="grid grid-cols-1 gap-3">
-                {packages.map((pkg) => (
+                {packages.filter(pkg => pkg.category !== "addon").map((pkg) => (
                   <div key={pkg.id} className="rounded-2xl bg-teal-50/40 dark:bg-black/40 p-4 border border-teal-100/50 dark:border-white/5 flex items-center justify-between">
                     <div>
                       <span className="inline-block rounded bg-teal-100/60 dark:bg-white/5 border border-teal-200 dark:border-white/10 px-1.5 py-0.5 text-[8px] font-bold text-teal-800 dark:text-zinc-400 uppercase tracking-wide">

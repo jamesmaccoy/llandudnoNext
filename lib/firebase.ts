@@ -737,4 +737,20 @@ export async function getBookingByToken(token: string): Promise<any | null> {
   return null;
 }
 
+export async function getBooking(id: string): Promise<any | null> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    const bookings = dbData.bookings || [];
+    return bookings.find((b: any) => b.id === id) || null;
+  }
+  try {
+    const doc = await db.collection("bookings").doc(id).get();
+    if (doc.exists) return doc.data();
+  } catch (err) {
+    console.error(`[Firebase] getBooking error for id ${id}:`, err);
+  }
+  return null;
+}
+
 

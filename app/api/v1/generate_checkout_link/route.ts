@@ -75,7 +75,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return processGenerateRequest(type);
+  const host = request.headers.get("host") || "";
+  const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const siteUrl = host ? `${proto}://${host}` : request.nextUrl.origin;
+
+  return processGenerateRequest(type, undefined, undefined, undefined, undefined, siteUrl);
 }
 
 export async function POST(request: NextRequest) {
@@ -95,7 +99,11 @@ export async function POST(request: NextRequest) {
     const amountInCentsOverride = body.amountInCentsOverride;
     const descriptionOverride = body.descriptionOverride;
 
-    return processGenerateRequest(type, bookingId, estimateId, amountInCentsOverride, descriptionOverride);
+    const host = request.headers.get("host") || "";
+    const proto = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const siteUrl = host ? `${proto}://${host}` : request.nextUrl.origin;
+
+    return processGenerateRequest(type, bookingId, estimateId, amountInCentsOverride, descriptionOverride, siteUrl);
   } catch (err: any) {
     console.error("generate_checkout_link post parsing error:", err);
     return NextResponse.json(
@@ -110,7 +118,8 @@ async function processGenerateRequest(
   bookingId?: string,
   estimateId?: string,
   amountInCentsOverride?: number,
-  descriptionOverride?: string
+  descriptionOverride?: string,
+  siteUrl?: string
 ) {
   try {
     const pkg = await getPackage(type);
@@ -138,6 +147,7 @@ async function processGenerateRequest(
         bookingId: bookingId || "",
         estimateId: estimateId || ""
       },
+      siteUrl
     });
 
     return NextResponse.json(

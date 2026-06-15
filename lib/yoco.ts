@@ -4,6 +4,7 @@ export interface CreateCheckoutProps {
   amountInCents: number;
   description: string;
   metadata?: Record<string, any>;
+  siteUrl?: string;
 }
 
 export function parsePriceToCents(pkg: any): number {
@@ -25,9 +26,9 @@ export function parsePriceToCents(pkg: any): number {
   return Math.round(rands * 100);
 }
 
-export async function createCheckout({ amountInCents, description, metadata }: CreateCheckoutProps): Promise<string> {
+export async function createCheckout({ amountInCents, description, metadata, siteUrl: passedSiteUrl }: CreateCheckoutProps): Promise<string> {
   const secretKey = process.env.YOCO_SEC?.trim();
-  const siteUrl = (process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  const siteUrl = (passedSiteUrl || process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 
   console.log(`[Yoco Checkout] Initializing checkout: amount=${amountInCents}, description="${description}", keyPrefix=${secretKey ? secretKey.substring(0, 12) + "..." : "undefined"}`);
 

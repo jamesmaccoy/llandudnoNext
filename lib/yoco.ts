@@ -26,11 +26,11 @@ export function parsePriceToCents(pkg: any): number {
 }
 
 export async function createCheckout({ amountInCents, description, metadata }: CreateCheckoutProps): Promise<string> {
-  const isProduction = process.env.NODE_ENV === "production";
   const secretKey = (
-    isProduction
-      ? process.env.YOCO_SECRET_KEY || process.env.LIVE_YOCO_SEC || process.env.TEST_YOCO_SEC
-      : process.env.TEST_YOCO_SEC || process.env.YOCO_SECRET_KEY || process.env.LIVE_YOCO_SEC
+    process.env.YOCO_SEC ||
+    process.env.YOCO_SECRET_KEY || 
+    process.env.LIVE_YOCO_SEC || 
+    process.env.TEST_YOCO_SEC
   )?.trim();
   const siteUrl = (process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 

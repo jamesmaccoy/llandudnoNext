@@ -13,11 +13,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isProduction = process.env.NODE_ENV === "production";
     const secretKey = (
-      isProduction
-        ? process.env.YOCO_SECRET_KEY || process.env.LIVE_YOCO_SEC || process.env.TEST_YOCO_SEC
-        : process.env.TEST_YOCO_SEC || process.env.YOCO_SECRET_KEY || process.env.LIVE_YOCO_SEC
+      process.env.YOCO_SEC ||
+      process.env.YOCO_SECRET_KEY || 
+      process.env.LIVE_YOCO_SEC || 
+      process.env.TEST_YOCO_SEC
     )?.trim();
 
     if (!secretKey) {

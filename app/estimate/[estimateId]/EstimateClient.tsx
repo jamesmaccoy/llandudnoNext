@@ -18,6 +18,7 @@ interface Estimate {
   paymentStatus: string;
   token: string;
   guests?: string[];
+  guestsDetails?: Record<string, { name: string; email: string }>;
 }
 
 interface Property {
@@ -67,7 +68,7 @@ function EstimateClientContent({ estimate, property, selectedPackage }: Estimate
     setPayError(null);
 
     try {
-      const targetType = selectedPackage ? selectedPackage.id : "shack_stack";
+      const targetType = selectedPackage ? selectedPackage.id : (estimate.propertyId === "cottage" ? "long_weekend_at_the_Cottage" : "shack_stack");
 
       const linkRes = await fetch("/api/v1/generate_checkout_link", {
         method: "POST",
@@ -234,14 +235,18 @@ function EstimateClientContent({ estimate, property, selectedPackage }: Estimate
             {/* Guest List */}
             {estimate.guests && estimate.guests.length > 0 && (
               <div className="border-t border-teal-100/60 dark:border-white/5 pt-4">
-                <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase block mb-2">Joined Guests UIDs</span>
+                <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase block mb-2">Joined Guests</span>
                 <ul className="space-y-1.5">
-                  {estimate.guests.map((gUid, idx) => (
-                    <li key={idx} className="text-[11px] font-mono bg-teal-50/50 dark:bg-black/40 px-3 py-1.5 rounded-lg border border-teal-100/50 dark:border-white/5 text-teal-950 dark:text-zinc-300 flex items-center justify-between">
-                      <span>👤 {gUid === user.uid ? `${gUid} (You)` : gUid}</span>
-                      <span className="text-[8px] bg-teal-500/10 text-teal-600 px-1.5 py-0.5 rounded font-extrabold uppercase">Joined</span>
-                    </li>
-                  ))}
+                  {estimate.guests.map((gUid, idx) => {
+                    const details = estimate.guestsDetails?.[gUid];
+                    const label = details ? `${details.name} (${details.email})` : (gUid === user.uid ? "You" : gUid.substring(0, 8) + "...");
+                    return (
+                      <li key={idx} className="text-[11px] font-mono bg-teal-50/50 dark:bg-black/40 px-3 py-1.5 rounded-lg border border-teal-100/50 dark:border-white/5 text-teal-950 dark:text-zinc-300 flex items-center justify-between">
+                        <span>👤 {label}</span>
+                        <span className="text-[8px] bg-teal-500/10 text-teal-600 px-1.5 py-0.5 rounded font-extrabold uppercase">Joined</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -299,8 +304,16 @@ function EstimateClientContent({ estimate, property, selectedPackage }: Estimate
                 {isPaying ? "Generating Yoco Link..." : "Confirm & Pay via Yoco"}
               </button>
             ) : (
-              <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/30 py-3.5 text-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                ✓ Stay Fully Paid & Booking Confirmed
+              <div className="space-y-4">
+                <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/30 py-3.5 text-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  ✓ Stay Fully Paid & Booking Confirmed
+                </div>
+                <Link
+                  href="/bookings"
+                  className="block w-full text-center rounded-xl py-3 text-xs font-bold text-white bg-teal-500 hover:bg-teal-600 transition-all active:scale-95 shadow-md shadow-teal-500/10"
+                >
+                  Go to My Bookings Dashboard
+                </Link>
               </div>
             )}
           </div>

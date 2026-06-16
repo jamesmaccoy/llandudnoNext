@@ -592,7 +592,7 @@ export async function updateEstimateStatus(id: string, paymentStatus: string): P
   }
 }
 
-export async function addGuestToEstimate(id: string, guestUid: string): Promise<boolean> {
+export async function addGuestToEstimate(id: string, guestUid: string, guestEmail?: string, guestName?: string): Promise<boolean> {
   const db = getFirestore();
   if (isMockMode || !db) {
     const dbData = readMockDb();
@@ -602,9 +602,14 @@ export async function addGuestToEstimate(id: string, guestUid: string): Promise<
       const guests = dbData.estimates[index].guests || [];
       if (!guests.includes(guestUid)) {
         guests.push(guestUid);
-        dbData.estimates[index].guests = guests;
-        writeMockDb(dbData);
       }
+      dbData.estimates[index].guests = guests;
+      
+      const guestsDetails = dbData.estimates[index].guestsDetails || {};
+      guestsDetails[guestUid] = { email: guestEmail || "", name: guestName || "" };
+      dbData.estimates[index].guestsDetails = guestsDetails;
+
+      writeMockDb(dbData);
       return true;
     }
     return false;
@@ -615,10 +620,12 @@ export async function addGuestToEstimate(id: string, guestUid: string): Promise<
     if (doc.exists) {
       const data = doc.data();
       const guests = data?.guests || [];
+      const guestsDetails = data?.guestsDetails || {};
       if (!guests.includes(guestUid)) {
         guests.push(guestUid);
-        await docRef.update({ guests });
       }
+      guestsDetails[guestUid] = { email: guestEmail || "", name: guestName || "" };
+      await docRef.update({ guests, guestsDetails });
       return true;
     }
     return false;
@@ -685,7 +692,7 @@ export async function getLatestEstimateForUser(userId: string): Promise<any | nu
   }
 }
 
-export async function addGuestToBooking(id: string, guestUid: string): Promise<boolean> {
+export async function addGuestToBooking(id: string, guestUid: string, guestEmail?: string, guestName?: string): Promise<boolean> {
   const db = getFirestore();
   if (isMockMode || !db) {
     const dbData = readMockDb();
@@ -695,9 +702,14 @@ export async function addGuestToBooking(id: string, guestUid: string): Promise<b
       const guests = dbData.bookings[index].guests || [];
       if (!guests.includes(guestUid)) {
         guests.push(guestUid);
-        dbData.bookings[index].guests = guests;
-        writeMockDb(dbData);
       }
+      dbData.bookings[index].guests = guests;
+      
+      const guestsDetails = dbData.bookings[index].guestsDetails || {};
+      guestsDetails[guestUid] = { email: guestEmail || "", name: guestName || "" };
+      dbData.bookings[index].guestsDetails = guestsDetails;
+
+      writeMockDb(dbData);
       return true;
     }
     return false;
@@ -708,10 +720,12 @@ export async function addGuestToBooking(id: string, guestUid: string): Promise<b
     if (doc.exists) {
       const data = doc.data();
       const guests = data?.guests || [];
+      const guestsDetails = data?.guestsDetails || {};
       if (!guests.includes(guestUid)) {
         guests.push(guestUid);
-        await docRef.update({ guests });
       }
+      guestsDetails[guestUid] = { email: guestEmail || "", name: guestName || "" };
+      await docRef.update({ guests, guestsDetails });
       return true;
     }
     return false;

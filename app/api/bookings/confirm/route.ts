@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       total: Number(estimate.total),
       paymentStatus: paymentStatus || "paid",
       estimateId: estimate.id,
-      guests: estimate.guests || []
+      guests: estimate.guests || [],
+      guestsDetails: estimate.guestsDetails || {}
     } as any);
 
     // Update estimate status to paid

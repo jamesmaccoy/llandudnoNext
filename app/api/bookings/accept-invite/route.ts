@@ -4,7 +4,7 @@ import { getBookingByToken, addGuestToBooking } from "@/lib/firebase";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { token, userId } = body;
+    const { token, userId, email, name } = body;
 
     if (!token || !userId) {
       return NextResponse.json({ success: false, error: "Missing required fields (token, userId)" }, { status: 400 });
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add guest to booking
-    const added = await addGuestToBooking(booking.id, userId);
+    const added = await addGuestToBooking(booking.id, userId, email, name);
     if (!added) {
       return NextResponse.json({ success: false, error: "Failed to join booking." }, { status: 500 });
     }

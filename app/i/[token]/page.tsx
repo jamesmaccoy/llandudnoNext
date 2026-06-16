@@ -35,7 +35,12 @@ function InviteLandingContent({ params }: InvitePageProps) {
         let res = await fetch("/api/estimates/accept-invite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, userId: user.uid })
+          body: JSON.stringify({ 
+            token, 
+            userId: user.uid,
+            email: user.email,
+            name: user.displayName || user.email?.split("@")[0] || "Guest"
+          })
         });
 
         let result = await res.json();
@@ -45,7 +50,12 @@ function InviteLandingContent({ params }: InvitePageProps) {
           res = await fetch("/api/bookings/accept-invite", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token, userId: user.uid })
+            body: JSON.stringify({ 
+              token, 
+              userId: user.uid,
+              email: user.email,
+              name: user.displayName || user.email?.split("@")[0] || "Guest"
+            })
           });
           result = await res.json();
 

@@ -4,7 +4,7 @@ import { getEstimateByToken, addGuestToEstimate } from "@/lib/firebase";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { token, userId } = body;
+    const { token, userId, email, name } = body;
 
     if (!token || !userId) {
       return NextResponse.json({ success: false, error: "Missing required fields (token, userId)" }, { status: 400 });
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add guest
-    const added = await addGuestToEstimate(estimate.id, userId);
+    const added = await addGuestToEstimate(estimate.id, userId, email, name);
     if (!added) {
       return NextResponse.json({ success: false, error: "Failed to join estimate." }, { status: 500 });
     }

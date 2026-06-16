@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
               total: Number(estimate.total),
               paymentStatus: "paid",
               estimateId: estimate.id,
-              guests: estimate.guests || []
+              guests: estimate.guests || [],
+              guestsDetails: estimate.guestsDetails || {}
             } as any);
             await updateEstimateStatus(estimateId, "paid");
             console.log(`[Yoco Webhook] Booking created successfully from estimate ${estimateId}`);

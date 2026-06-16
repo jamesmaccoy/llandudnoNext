@@ -39,6 +39,7 @@ interface Booking {
   paymentStatus: string;
   token?: string;
   guests?: string[];
+  guestsDetails?: Record<string, { name: string; email: string }>;
 }
 
 function BookingsCheckoutContent() {
@@ -62,6 +63,7 @@ function BookingsCheckoutContent() {
 
   // Admin and filter mode states
   const [viewMode, setViewMode] = useState<"my" | "all">("my");
+  const [latestEstimate, setLatestEstimate] = useState<any | null>(null);
 
 
   // Load property, user dates, and packages
@@ -86,10 +88,6 @@ function BookingsCheckoutContent() {
           const pkgResult = await pkgRes.json();
           if (pkgResult.success && pkgResult.data) {
             setPackages(pkgResult.data);
-            const corePkgs = pkgResult.data.filter((p: PackageData) => p.category !== "addon");
-            if (corePkgs.length > 0) {
-              setSelectedPackageId(corePkgs[0].id);
-            }
           }
 
           // 3. Fetch Bookings for history list
@@ -124,7 +122,7 @@ function BookingsCheckoutContent() {
     loadPageData();
   }, [propertyId]);
 
-  // Load saved dates for logged-in user
+  // Load saved dates and latest estimate for logged-in user
   useEffect(() => {
     if (authLoading) return;
     
@@ -133,21 +131,27 @@ function BookingsCheckoutContent() {
       return;
     }
 
-    const fetchUserDates = async () => {
+    const fetchUserData = async () => {
       try {
         const res = await fetch(`/api/user/dates?userId=${user.uid}`);
         const result = await res.json();
         if (result.success && result.data) {
           setSavedDates(result.data);
         }
+
+        const estRes = await fetch(`/api/estimates/latest?userId=${user.uid}`);
+        const estResult = await estRes.json();
+        if (estResult.success && estResult.data) {
+          setLatestEstimate(estResult.data);
+        }
       } catch (err) {
-        console.error("Failed to retrieve user dates:", err);
+        console.error("Failed to retrieve user dates or estimate:", err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUserDates();
+    fetchUserData();
   }, [user, authLoading]);
 
   // Check for date overlaps
@@ -232,11 +236,11 @@ function BookingsCheckoutContent() {
 
   // Focus math solely on package values and stay total
   const baseCost = basePricePerNight * nights;
-  const packageMultiplier = selectedPackage ? selectedPackage.multiplier : 1.0;
-  const packageBaseRate = selectedPackage ? selectedPackage.baseRate : 0;
+  const packagePrice = selectedPackage ? (selectedPackage.price || selectedPackage.baseRate || 0) : 0;
+  const packageMultiplier = selectedPackage ? (selectedPackage.multiplier || 1.0) : 1.0;
   
-  // Total calculated combining baseCost, packageMultiplier, and packageBaseRate
-  const finalTotal = (baseCost + packageBaseRate) * packageMultiplier;
+  // Total calculated combining baseCost, packagePrice, and packageMultiplier
+  const finalTotal = (baseCost + packagePrice) * packageMultiplier;
 
   const handleUpdateDates = async (start: string, end: string) => {
     if (!user) return;
@@ -306,7 +310,12 @@ function BookingsCheckoutContent() {
         "3. ✅ Estimate saved successfully. Preparing payment details...",
       ]);
 
-      const targetType = selectedPackage ? selectedPackage.yocoId : "shack_stack";
+      const targetType = selectedPackage 
+        ? (selectedPackage.id || selectedPackage.yocoId) 
+        : (packages.length > 0 
+            ? packages[0].id 
+            : (propertyId === "cottage" ? "long_weekend_at_the_Cottage" : "shack_stack")
+          );
 
       // POST create link
       const linkRes = await fetch("/api/v1/generate_checkout_link", {
@@ -398,6 +407,50 @@ function BookingsCheckoutContent() {
           </Link>
         </header>
 
+        {latestEstimate && latestEstimate.paymentStatus === "pending" && (
+          <div className="mb-8 rounded-3xl border border-orange-500/20 bg-orange-500/5 p-6 backdrop-blur-md relative overflow-hidden">
+            <div className="absolute -right-10 -top-10 w-24 h-24 rounded-full bg-orange-500/10 blur-xl pointer-events-none" />
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <span className="inline-block rounded bg-orange-500/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-orange-600 dark:text-orange-400">
+                  Unpaid Stay Estimate
+                </span>
+                <h3 className="text-lg font-black text-teal-950 dark:text-white mt-1">
+                  {propertiesList.find(p => p.id === latestEstimate.propertyId)?.title || latestEstimate.propertyId}
+                </h3>
+                <p className="text-xs text-teal-850/60 dark:text-zinc-400 mt-1">
+                  Dates: <strong>{formatDisplayDate(latestEstimate.fromDate)}</strong> to <strong>{formatDisplayDate(latestEstimate.toDate)}</strong>
+                </p>
+                <p className="text-xs text-teal-800/80 dark:text-zinc-300 mt-1 font-bold">
+                  Total: R {latestEstimate.total ? Number(latestEstimate.total).toLocaleString() : "0"}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2.5">
+                <Link
+                  href={`/estimate/${latestEstimate.id}`}
+                  className="rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-orange-600 transition-all shadow-md shadow-orange-500/10"
+                >
+                  View Details & Pay
+                </Link>
+                <button
+                  onClick={() => {
+                    const inviteUrl = `${window.location.origin}/i/${latestEstimate.token}`;
+                    navigator.clipboard.writeText(inviteUrl);
+                    alert("📋 Estimate invite URL copied to clipboard: " + inviteUrl);
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-orange-500/20 bg-orange-500/10 px-4 py-2.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-550/15 transition-all active:scale-95"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l5.57 3.285m-5.57-3.285l5.57-3.285M13.5 18.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM13.5 9.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />
+                  </svg>
+                  Share Estimate
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {user?.isAdmin && (
           <div className="flex border-b border-teal-100 dark:border-white/5 mb-8">
             <button
@@ -469,17 +522,35 @@ function BookingsCheckoutContent() {
                         <span className="text-[9px] font-mono text-teal-800/60 dark:text-zinc-500 block mt-0.5">Ref: {b.id}</span>
                       </div>
                       
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide border ${
-                          b.paymentStatus === "paid" || b.paymentStatus === "success"
-                            ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/25"
-                            : b.paymentStatus === "failed"
-                            ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-100 dark:border-red-500/25"
-                            : "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/25"
-                        }`}
-                      >
-                        {b.paymentStatus}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={`inline-block rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide border ${
+                            b.paymentStatus === "paid" || b.paymentStatus === "success"
+                              ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/25"
+                              : b.paymentStatus === "failed"
+                              ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-100 dark:border-red-500/25"
+                              : "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/25"
+                          }`}
+                        >
+                          {b.paymentStatus}
+                        </span>
+                        {b.token && (b.paymentStatus === "paid" || b.paymentStatus === "success") && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const inviteUrl = `${window.location.origin}/i/${b.token}`;
+                              navigator.clipboard.writeText(inviteUrl);
+                              alert("📋 Booking invite URL copied to clipboard: " + inviteUrl);
+                            }}
+                            title="Share Booking Invite Link"
+                            className="rounded-full bg-teal-50 dark:bg-white/5 border border-teal-100 dark:border-white/10 p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-550/15 transition-all active:scale-95 flex items-center justify-center"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l5.57 3.285m-5.57-3.285l5.57-3.285M13.5 18.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM13.5 9.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex">
@@ -499,6 +570,47 @@ function BookingsCheckoutContent() {
                       </div>
                     </div>
 
+                    {/* Guest Invite/List Section */}
+                    {(b.paymentStatus === "paid" || b.paymentStatus === "success") && (
+                      <div className="border-t border-teal-100/50 dark:border-white/5 pt-4 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                            Invited Guests
+                          </span>
+                          {b.token && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const inviteUrl = `${window.location.origin}/i/${b.token}`;
+                                navigator.clipboard.writeText(inviteUrl);
+                                alert("📋 Booking invite URL copied to clipboard: " + inviteUrl);
+                              }}
+                              className="flex items-center gap-1.5 rounded bg-teal-500/10 px-2.5 py-1 text-[9px] font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-550/20 transition-all active:scale-95"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l5.57 3.285m-5.57-3.285l5.57-3.285M13.5 18.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM13.5 9.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />
+                              </svg>
+                              Invite Guests
+                            </button>
+                          )}
+                        </div>
+                        {b.guests && b.guests.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {b.guests.map((gUid, idx) => {
+                              const details = b.guestsDetails?.[gUid];
+                              const displayName = details ? `${details.name} (${details.email})` : (gUid === user.uid ? "You" : gUid.substring(0, 8) + "...");
+                              return (
+                                <span key={idx} className="rounded bg-teal-55/10 dark:bg-white/5 border border-teal-150/40 px-2 py-0.5 text-[9px] font-mono text-teal-950 dark:text-zinc-300">
+                                  👤 {displayName}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-teal-800/60 dark:text-zinc-500 italic">No guests joined this stay yet.</p>
+                        )}
+                      </div>
+                    )}
 
                   </div>
 
@@ -585,9 +697,12 @@ function BookingsCheckoutContent() {
                 onChange={(e) => setSelectedPackageId(e.target.value)}
                 className="w-full rounded-xl border border-teal-150 dark:border-white/10 bg-white dark:bg-black/40 px-4 py-3 text-sm text-teal-950 dark:text-white focus:border-teal-500 focus:outline-none"
               >
+                <option value="" className="bg-white dark:bg-zinc-950 text-teal-950 dark:text-white">
+                  No Package (Standard Stay)
+                </option>
                 {packages.filter(p => p.category !== "addon").map((pkg) => (
                   <option key={pkg.id} value={pkg.id} className="bg-white dark:bg-zinc-950 text-teal-950 dark:text-white">
-                    {pkg.name}
+                    {pkg.name} (R {pkg.price || pkg.baseRate || 0} {pkg.multiplier && pkg.multiplier !== 1 ? `| x${pkg.multiplier}` : ""})
                   </option>
                 ))}
               </select>
@@ -626,14 +741,18 @@ function BookingsCheckoutContent() {
                 <span>Nightly Cost (R {basePricePerNight} × {nights}):</span>
                 <span className="font-bold text-teal-950 dark:text-white">R {baseCost.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-teal-900 dark:text-zinc-400">
-                <span>Addon Base rate:</span>
-                <span className="font-bold text-teal-950 dark:text-white">R {packageBaseRate}</span>
-              </div>
-              <div className="flex justify-between text-teal-900 dark:text-zinc-400">
-                <span>Package Multiplier:</span>
-                <span className="font-bold text-teal-950 dark:text-white">× {packageMultiplier}</span>
-              </div>
+              {selectedPackage && (
+                <>
+                  <div className="flex justify-between text-teal-900 dark:text-zinc-400">
+                    <span>Package Cost ({selectedPackage.name}):</span>
+                    <span className="font-bold text-teal-950 dark:text-white">R {packagePrice.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-teal-900 dark:text-zinc-400">
+                    <span>Package Multiplier:</span>
+                    <span className="font-bold text-teal-950 dark:text-white">× {packageMultiplier}</span>
+                  </div>
+                </>
+              )}
               
               <div className="border-t border-teal-100 dark:border-white/10 pt-4 flex justify-between items-center">
                 <span className="text-sm font-bold text-teal-950 dark:text-white">Payable Total ZAR:</span>

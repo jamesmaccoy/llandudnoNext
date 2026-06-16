@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth";
+import Link from "next/link";
 
 interface Property {
   id: string;
@@ -32,6 +33,7 @@ export default function AdminPackagesPage() {
   const [isLoadingPkgs, setIsLoadingPkgs] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
 
   // Form Fields
   const [pkgId, setPkgId] = useState("");
@@ -53,8 +55,9 @@ export default function AdminPackagesPage() {
           setProperties(result.data);
           setSelectedPropertyId(result.data[0].id);
         }
-      } catch (err: any) {
-        console.error("Failed to load properties:", err);
+      } catch (err: unknown) {
+        const error = err as Error;
+        console.error("Failed to load properties:", error);
       } finally {
         setIsLoadingProps(false);
       }
@@ -65,14 +68,42 @@ export default function AdminPackagesPage() {
   // Auto-generate ID from package name
   const handleNameChange = (val: string) => {
     setName(val);
-    setPkgId(
-      val
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/\s+/g, "_")
-        .replace(/__+/g, "_")
-        .trim()
-    );
+    if (!editingPackageId) {
+      setPkgId(
+        val
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "_")
+          .replace(/__+/g, "_")
+          .trim()
+      );
+    }
+  };
+
+  const startEditPackage = (pkg: Package) => {
+    setEditingPackageId(pkg.id);
+    setPkgId(pkg.id);
+    setName(pkg.name);
+    setPrice(String(pkg.price));
+    setDescription(pkg.description || "");
+    setMultiplier(String(pkg.multiplier));
+    setBaseRate(String(pkg.baseRate));
+    setYocoId(pkg.yocoId || "");
+    setCategory(pkg.category || "standard");
+    setStatusMessage(null);
+  };
+
+  const cancelEditPackage = () => {
+    setEditingPackageId(null);
+    setName("");
+    setPkgId("");
+    setPrice("");
+    setDescription("");
+    setMultiplier("1.0");
+    setBaseRate("0");
+    setYocoId("");
+    setCategory("standard");
+    setStatusMessage(null);
   };
 
   // Load packages when selected property changes
@@ -85,8 +116,9 @@ export default function AdminPackagesPage() {
       if (result.success && result.data) {
         setPackages(result.data);
       }
-    } catch (err: any) {
-      console.error("Failed to fetch packages:", err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error("Failed to fetch packages:", error);
     } finally {
       setIsLoadingPkgs(false);
     }
@@ -94,7 +126,10 @@ export default function AdminPackagesPage() {
 
   useEffect(() => {
     if (selectedPropertyId) {
-      fetchPackages(selectedPropertyId);
+      const timer = setTimeout(() => {
+        fetchPackages(selectedPropertyId);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [selectedPropertyId]);
 
@@ -133,10 +168,14 @@ export default function AdminPackagesPage() {
       const resJson = await response.json();
 
       if (!response.ok || !resJson.success) {
-        throw new Error(resJson.data || "Failed to create package.");
+        throw new Error(resJson.data || `Failed to ${editingPackageId ? "update" : "create"} package.`);
       }
 
-      setStatusMessage({ type: "success", text: "Package deal created successfully!" });
+      setStatusMessage({ 
+        type: "success", 
+        text: editingPackageId ? "Package deal updated successfully!" : "Package deal created successfully!" 
+      });
+      setEditingPackageId(null);
       setName("");
       setPkgId("");
       setPrice("");
@@ -146,8 +185,9 @@ export default function AdminPackagesPage() {
       setYocoId("");
       setCategory("standard");
       fetchPackages(selectedPropertyId); // reload list
-    } catch (err: any) {
-      setStatusMessage({ type: "error", text: err.message || "An error occurred." });
+    } catch (err: unknown) {
+      const error = err as Error;
+      setStatusMessage({ type: "error", text: error.message || "An error occurred." });
     } finally {
       setIsSubmitting(false);
     }
@@ -199,18 +239,18 @@ export default function AdminPackagesPage() {
             Administrative privileges are required to access this portal. Please sign in with an administrator account to continue.
           </p>
           <div className="mt-6 flex flex-col gap-2">
-            <a
+            <Link
               href="/login"
               className="w-full rounded-xl bg-teal-500 py-3 text-center text-xs font-bold text-white hover:bg-teal-600 transition-all shadow-md shadow-teal-500/10"
             >
               Sign In as Admin
-            </a>
-            <a
+            </Link>
+            <Link
               href="/"
               className="w-full rounded-xl bg-white/5 border border-white/10 py-3 text-center text-xs font-bold text-zinc-300 hover:text-white transition-all"
             >
               Back to Home
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -244,19 +284,19 @@ export default function AdminPackagesPage() {
         ) : properties.length === 0 ? (
           <div className="text-center py-20 rounded-3xl border border-white/5 bg-white/5 p-6">
             <p className="text-sm text-zinc-400 mb-4">You need to create a property before setting up packages.</p>
-            <a
+            <Link
               href="/admin/properties"
               className="inline-flex rounded-xl bg-teal-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-600 transition-all"
             >
               ✙ Create a Property First
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start">
             {/* Create Package Form */}
             <div className="md:col-span-2 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-md">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>✙</span> Add Package Deal
+                <span>{editingPackageId ? "✎" : "✙"}</span> {editingPackageId ? "Update Package Deal" : "Add Package Deal"}
               </h2>
 
               {statusMessage && (
@@ -279,7 +319,8 @@ export default function AdminPackagesPage() {
                   <select
                     value={selectedPropertyId}
                     onChange={(e) => setSelectedPropertyId(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none"
+                    disabled={!!editingPackageId}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {properties.map((p) => (
                       <option key={p.id} value={p.id} className="bg-zinc-900">
@@ -311,7 +352,8 @@ export default function AdminPackagesPage() {
                     placeholder="e.g. extended_shack_stay"
                     value={pkgId}
                     onChange={(e) => setPkgId(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white/60 focus:border-teal-500 focus:outline-none"
+                    disabled={!!editingPackageId}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white/60 focus:border-teal-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -397,13 +439,30 @@ export default function AdminPackagesPage() {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 py-3 text-center text-xs font-bold text-white shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-95 transition-all"
-                >
-                  {isSubmitting ? "Creating package..." : "Publish Package Deal"}
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 py-3 text-center text-xs font-bold text-white shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    {isSubmitting
+                      ? editingPackageId
+                        ? "Updating package..."
+                        : "Creating package..."
+                      : editingPackageId
+                      ? "Update Package Deal"
+                      : "Publish Package Deal"}
+                  </button>
+                  {editingPackageId && (
+                    <button
+                      type="button"
+                      onClick={cancelEditPackage}
+                      className="w-full rounded-xl bg-white/5 border border-white/10 py-3 text-center text-xs font-bold text-zinc-300 hover:text-white transition-all active:scale-95"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -458,12 +517,20 @@ export default function AdminPackagesPage() {
                           <div>Multiplier: <strong className="text-zinc-300">{pkg.multiplier}x</strong></div>
                           <div>Base Flat Rate: <strong className="text-zinc-300">R {pkg.baseRate}</strong></div>
                         </div>
-                        <button
-                          onClick={() => handleDeletePackage(pkg.id)}
-                          className="rounded bg-red-500/10 border border-red-500/20 px-2.5 py-1 text-[9px] font-bold text-red-400 hover:bg-red-550 hover:text-white transition-all active:scale-95"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => startEditPackage(pkg)}
+                            className="rounded bg-teal-500/10 border border-teal-500/20 px-2.5 py-1 text-[9px] font-bold text-teal-400 hover:bg-teal-500 hover:text-white transition-all active:scale-95"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeletePackage(pkg.id)}
+                            className="rounded bg-red-500/10 border border-red-500/20 px-2.5 py-1 text-[9px] font-bold text-red-400 hover:bg-red-550 hover:text-white transition-all active:scale-95"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

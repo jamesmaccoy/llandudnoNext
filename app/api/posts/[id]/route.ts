@@ -25,18 +25,31 @@ export async function PUT(
   try {
     const { id } = await params;
 
-    // Check admin permissions
+    // Check admin/host permissions
     const userId = request.headers.get("x-user-id");
     const email = request.headers.get("x-user-email");
     if (!userId || !(await isUserAdmin(userId, email))) {
       return NextResponse.json({ success: false, error: "Unauthorized access: admin privileges required." }, { status: 403 });
     }
 
-    const body = await request.json().catch(() => ({}));
-    const { title, slug, basePricePerNight, airbnbCalendarUrl, googleCalendarUrl } = body;
+    // Retrieve existing property to verify ownership
+    const existing = await getProperty(id);
+    if (!existing) {
+      return NextResponse.json({ success: false, error: "Property not found." }, { status: 404 });
+    }
 
-    if (!title || !slug || basePricePerNight === undefined) {
-      return NextResponse.json({ success: false, error: "Missing required fields (title, slug, basePricePerNight)" }, { status: 400 });
+    // Verify host tenancy ownership (allow if matching hostId, or if existing has no hostId, or if it is default host)
+    const propertyHostId = existing.hostId || "mock_admin_example_com";
+    if (propertyHostId !== userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized: You do not own this property listing." }, { status: 403 });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const { title, name, slug, basePricePerNight, airbnbCalendarUrl, googleCalendarUrl, description, images } = body;
+
+    const resolvedTitle = title || name;
+    if (!resolvedTitle || !slug || basePricePerNight === undefined) {
+      return NextResponse.json({ success: false, error: "Missing required fields (title/name, slug, basePricePerNight)" }, { status: 400 });
     }
 
     const price = Number(basePricePerNight);
@@ -47,11 +60,15 @@ export async function PUT(
     // Call createProperty passing the id to ensure overwrite/update rather than duplicate
     const property = await createProperty({
       id,
-      title,
+      title: resolvedTitle,
+      name: resolvedTitle,
       slug: slug.trim().toLowerCase(),
       basePricePerNight: price,
       airbnbCalendarUrl: airbnbCalendarUrl || "",
-      googleCalendarUrl: googleCalendarUrl || ""
+      googleCalendarUrl: googleCalendarUrl || "",
+      hostId: propertyHostId, // Keep original hostId
+      description: description !== undefined ? description : (existing.description || ""),
+      images: images !== undefined ? images : (existing.images || [])
     });
 
     return NextResponse.json({ success: true, data: property });
@@ -68,11 +85,23 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Check admin permissions
+    // Check admin/host permissions
     const userId = request.headers.get("x-user-id");
     const email = request.headers.get("x-user-email");
     if (!userId || !(await isUserAdmin(userId, email))) {
       return NextResponse.json({ success: false, error: "Unauthorized access: admin privileges required." }, { status: 403 });
+    }
+
+    // Retrieve existing property to verify ownership
+    const existing = await getProperty(id);
+    if (!existing) {
+      return NextResponse.json({ success: false, error: "Property not found." }, { status: 404 });
+    }
+
+    // Verify host tenancy ownership
+    const propertyHostId = existing.hostId || "mock_admin_example_com";
+    if (propertyHostId !== userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized: You do not own this property listing." }, { status: 403 });
     }
 
     const success = await deleteProperty(id);
@@ -87,4 +116,3 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-

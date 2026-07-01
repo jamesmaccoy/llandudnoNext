@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createProperty, listProperties, isUserAdmin } from "@/lib/firebase";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const list = await listProperties();
-    return NextResponse.json({ success: true, data: list });
+    const { searchParams } = new URL(req.url);
+    // Enforce hostId isolation: default to mock_admin_example_com if no hostId is specified
+    // to preserve public guest views (homepage, bookings list).
+    const hostId = searchParams.get("hostId") || "mock_admin_example_com";
+
+    const list = await listProperties(hostId);
+    return NextResponse.json({ success: true, data: list, properties: list });
   } catch (err: any) {
     console.error("GET /api/posts error:", err);
-    return NextResponse.json({ success: false, data: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: err.message, data: err.message }, { status: 500 });
   }
 }
 
@@ -17,32 +22,44 @@ export async function POST(request: NextRequest) {
     const userId = request.headers.get("x-user-id");
     const email = request.headers.get("x-user-email");
     if (!userId || !(await isUserAdmin(userId, email))) {
-      return NextResponse.json({ success: false, data: "Unauthorized access: admin privileges required." }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Unauthorized access: admin privileges required.", data: "Unauthorized access: admin privileges required." }, { status: 403 });
     }
 
     const body = await request.json().catch(() => ({}));
-    const { title, slug, basePricePerNight, airbnbCalendarUrl, googleCalendarUrl } = body;
+    const { hostId, name, title, slug, basePricePerNight, description, images, airbnbCalendarUrl, googleCalendarUrl } = body;
 
-    if (!title || !slug || basePricePerNight === undefined) {
-      return NextResponse.json({ success: false, data: "Missing required fields (title, slug, basePricePerNight)" }, { status: 400 });
+    // Use passed hostId or fallback to headers
+    const activeHostId = hostId || userId;
+
+    if (!activeHostId) {
+      return NextResponse.json({ success: false, error: "Missing identity metadata parameters (hostId)", data: "Missing identity metadata parameters (hostId)" }, { status: 400 });
+    }
+
+    const resolvedTitle = title || name;
+    if (!resolvedTitle || !slug || basePricePerNight === undefined) {
+      return NextResponse.json({ success: false, error: "Missing required fields (title/name, slug, basePricePerNight)", data: "Missing required fields (title/name, slug, basePricePerNight)" }, { status: 400 });
     }
 
     const price = Number(basePricePerNight);
     if (isNaN(price) || price < 0) {
-      return NextResponse.json({ success: false, data: "basePricePerNight must be a positive number" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "basePricePerNight must be a positive number", data: "basePricePerNight must be a positive number" }, { status: 400 });
     }
 
     const property = await createProperty({
-      title,
+      title: resolvedTitle,
+      name: resolvedTitle,
       slug: slug.trim().toLowerCase(),
       basePricePerNight: price,
       airbnbCalendarUrl: airbnbCalendarUrl || "",
-      googleCalendarUrl: googleCalendarUrl || ""
+      googleCalendarUrl: googleCalendarUrl || "",
+      hostId: activeHostId,
+      description: description || "",
+      images: images || []
     });
 
-    return NextResponse.json({ success: true, data: property }, { status: 201 });
+    return NextResponse.json({ success: true, data: property, id: property.id }, { status: 201 });
   } catch (err: any) {
     console.error("POST /api/posts error:", err);
-    return NextResponse.json({ success: false, data: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: err.message, data: err.message }, { status: 500 });
   }
 }

@@ -12,6 +12,9 @@ interface Property {
   basePricePerNight: number;
   airbnbCalendarUrl?: string;
   googleCalendarUrl?: string;
+  description?: string;
+  images?: string[];
+  hostId?: string;
 }
 
 function EditPropertyContent({ id }: { id: string }) {
@@ -29,6 +32,9 @@ function EditPropertyContent({ id }: { id: string }) {
   const [basePrice, setBasePrice] = useState("");
   const [airbnbCalendarUrl, setAirbnbCalendarUrl] = useState("");
   const [googleCalendarUrl, setGoogleCalendarUrl] = useState("");
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<{ name: string; progress: number }[]>([]);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -37,11 +43,13 @@ function EditPropertyContent({ id }: { id: string }) {
         const result = await res.json();
         if (result.success && result.data) {
           setProperty(result.data);
-          setTitle(result.data.title || "");
+          setTitle(result.data.title || result.data.name || "");
           setSlug(result.data.slug || "");
           setBasePrice(result.data.basePricePerNight ? String(result.data.basePricePerNight) : "");
           setAirbnbCalendarUrl(result.data.airbnbCalendarUrl || "");
           setGoogleCalendarUrl(result.data.googleCalendarUrl || "");
+          setDescription(result.data.description || "");
+          setImages(result.data.images || []);
         } else {
           setStatusMessage({ type: "error", text: result.error || "Property not found." });
         }
@@ -55,6 +63,64 @@ function EditPropertyContent({ id }: { id: string }) {
 
     fetchProperty();
   }, [id]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    
+    // Add upload placeholders
+    setUploadingFiles(prev => [...prev, ...fileList.map(f => ({ name: f.name, progress: 10 }))]);
+
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      try {
+        // 1. Request presigned URL from /api/media/presign
+        const presignRes = await fetch("/api/media/presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            hostId: user?.uid || "mock_admin",
+            filename: file.name,
+            contentType: file.type,
+            propertyId: id
+          })
+        });
+
+        if (!presignRes.ok) throw new Error("Failed to get presigned URL");
+        const { presignedUrl, publicUrl } = await presignRes.json();
+
+        // Update progress to 50%
+        setUploadingFiles(prev => prev.map(item => item.name === file.name ? { ...item, progress: 50 } : item));
+
+        // 2. PUT file content directly to presigned URL
+        const uploadRes = await fetch(presignedUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type
+          },
+          body: file
+        });
+
+        if (!uploadRes.ok) throw new Error("Failed to upload image file");
+
+        // Add publicUrl to images state
+        setImages(prev => [...prev, publicUrl]);
+        
+        // Remove from uploading files list
+        setUploadingFiles(prev => prev.filter(item => item.name !== file.name));
+      } catch (err: any) {
+        console.error("Upload failed for file:", file.name, err);
+        setStatusMessage({ type: "error", text: `Upload failed for ${file.name}: ${err.message}` });
+        setUploadingFiles(prev => prev.filter(item => item.name !== file.name));
+      }
+    }
+  };
+
+  const handleRemoveImage = (url: string) => {
+    setImages(prev => prev.filter(img => img !== url));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,10 +142,13 @@ function EditPropertyContent({ id }: { id: string }) {
         },
         body: JSON.stringify({
           title,
+          name: title,
           slug,
           basePricePerNight: Number(basePrice),
           airbnbCalendarUrl,
-          googleCalendarUrl
+          googleCalendarUrl,
+          description,
+          images
         })
       });
 
@@ -133,7 +202,6 @@ function EditPropertyContent({ id }: { id: string }) {
     }
   };
 
-
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
@@ -142,21 +210,24 @@ function EditPropertyContent({ id }: { id: string }) {
     );
   }
 
-  if (!user || !user.isAdmin) {
+  // Ensure only the property owner can modify this property listing
+  const hasAccess = user && (user.isAdmin && (!property?.hostId || property.hostId === user.uid || property.hostId === "mock_admin_example_com"));
+
+  if (!user || !user.isAdmin || !hasAccess) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
         <div className="max-w-md w-full rounded-3xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-md">
           <span className="text-4xl">🔐</span>
           <h2 className="text-xl font-black text-white mt-4">Access Denied</h2>
           <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-            Administrative privileges are required to access this portal. Please sign in with an administrator account to continue.
+            Administrative privileges or listing ownership is required to access this portal.
           </p>
           <div className="mt-6 flex flex-col gap-2">
             <Link
-              href="/login"
+              href="/admin/properties"
               className="w-full rounded-xl bg-teal-500 py-3 text-center text-xs font-bold text-white hover:bg-teal-600 transition-all shadow-md shadow-teal-500/10"
             >
-              Sign In as Admin
+              Back to Properties
             </Link>
             <Link
               href="/"
@@ -185,7 +256,7 @@ function EditPropertyContent({ id }: { id: string }) {
             <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
               Edit Property
             </h1>
-            <p className="text-xs text-zinc-400 mt-1">Update property and external iCal feed credentials</p>
+            <p className="text-xs text-zinc-400 mt-1">Update property information and upload imagery</p>
           </div>
           <span className="rounded-lg bg-teal-500/10 border border-teal-500/20 px-3 py-1 text-xs font-semibold text-teal-400">
             ID: {id}
@@ -254,6 +325,67 @@ function EditPropertyContent({ id }: { id: string }) {
 
               <div>
                 <label className="mb-1 block text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                  Description / About Stay
+                </label>
+                <textarea
+                  placeholder="Describe your stay, amenities, views, scenery..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-teal-500 focus:outline-none placeholder:text-zinc-650 resize-y"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                  Property Imagery
+                </label>
+                <div className="relative group border-2 border-dashed border-white/10 rounded-2xl p-6 hover:border-teal-500/50 bg-black/20 hover:bg-black/40 transition-all cursor-pointer text-center">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="space-y-1">
+                    <span className="text-2xl block">📸</span>
+                    <span className="text-xs font-bold text-zinc-300 block">Drag & drop new files or click to upload</span>
+                    <span className="text-[10px] text-zinc-550 block">PNG, JPG, WEBP up to 10MB</span>
+                  </div>
+                </div>
+
+                {uploadingFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {uploadingFiles.map((file, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs bg-white/5 border border-white/5 rounded-lg p-2 font-mono">
+                        <span className="truncate max-w-[180px]">{file.name}</span>
+                        <span className="text-teal-400 font-bold">{file.progress}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {images.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-3.5">
+                    {images.map((url, index) => (
+                      <div key={index} className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-zinc-900">
+                        <img src={url} alt={`Upload ${index}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(url)}
+                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 text-[8px] leading-none opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 shadow-md shadow-black/50"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs text-zinc-400 font-semibold uppercase tracking-wider">
                   Airbnb iCal URL (Optional)
                 </label>
                 <input
@@ -278,7 +410,7 @@ function EditPropertyContent({ id }: { id: string }) {
                 />
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 pt-2">
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -290,7 +422,7 @@ function EditPropertyContent({ id }: { id: string }) {
                   type="button"
                   onClick={handleDelete}
                   disabled={isSubmitting}
-                  className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3 text-center text-xs font-bold text-red-400 hover:bg-red-550 hover:text-white transition-all active:scale-95"
+                  className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3 text-center text-xs font-bold text-red-400 hover:bg-red-600 hover:text-white transition-all active:scale-95"
                 >
                   Delete
                 </button>

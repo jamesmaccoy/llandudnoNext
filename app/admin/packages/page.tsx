@@ -45,11 +45,12 @@ export default function AdminPackagesPage() {
   const [yocoId, setYocoId] = useState("");
   const [category, setCategory] = useState("standard");
 
-  // Load properties on mount
+  // Load properties when user is available
   useEffect(() => {
     const loadProperties = async () => {
+      if (!user) return;
       try {
-        const res = await fetch("/api/posts");
+        const res = await fetch(`/api/posts?hostId=${user.uid}`);
         const result = await res.json();
         if (result.success && result.data && result.data.length > 0) {
           setProperties(result.data);
@@ -63,7 +64,7 @@ export default function AdminPackagesPage() {
       }
     };
     loadProperties();
-  }, []);
+  }, [user]);
 
   // Auto-generate ID from package name
   const handleNameChange = (val: string) => {

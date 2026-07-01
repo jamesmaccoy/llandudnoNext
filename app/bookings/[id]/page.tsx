@@ -61,12 +61,11 @@ function BookingDetailsContent({ id }: { id: string }) {
         const bkData = bkResult.data;
         setBooking(bkData);
 
-        // 2. Fetch all properties to resolve matching one
-        const propRes = await fetch("/api/posts");
+        // 2. Fetch specific property details directly
+        const propRes = await fetch(`/api/posts/${bkData.propertyId}`);
         const propResult = await propRes.json();
         if (propResult.success && propResult.data) {
-          const found = propResult.data.find((p: Property) => p.id === bkData.propertyId);
-          if (found) setProperty(found);
+          setProperty(propResult.data);
         }
 
         // 3. Fetch Packages for this property

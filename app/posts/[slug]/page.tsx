@@ -11,6 +11,8 @@ interface Property {
   title: string;
   slug: string;
   basePricePerNight: number;
+  description?: string;
+  images?: string[];
 }
 
 interface PackageData {
@@ -47,29 +49,29 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
   const [fromDate, setFromDate] = useState("2026-06-16");
   const [toDate, setToDate] = useState("2026-06-19");
   const [bookings, setBookings] = useState<any[]>([]);
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
 
   const loadPropertyData = async () => {
     try {
-      // 1. Fetch Property by slug
-      const propRes = await fetch("/api/posts");
+      // 1. Fetch Property by slug directly (the details API resolves slugs)
+      const propRes = await fetch(`/api/posts/${slug}`);
       const propResult = await propRes.json();
       if (propResult.success && propResult.data) {
-        const found = propResult.data.find((p: Property) => p.slug === slug);
-        if (found) {
-          setProperty(found);
-          // 2. Fetch Packages for this property
-          const pkgRes = await fetch(`/api/packages?propertyId=${found.id}`);
-          const pkgResult = await pkgRes.json();
-          if (pkgResult.success && pkgResult.data) {
-            setPackages(pkgResult.data);
-          }
+        const found = propResult.data;
+        setProperty(found);
+        
+        // 2. Fetch Packages for this property
+        const pkgRes = await fetch(`/api/packages?propertyId=${found.id}`);
+        const pkgResult = await pkgRes.json();
+        if (pkgResult.success && pkgResult.data) {
+          setPackages(pkgResult.data);
+        }
 
-          // 3. Fetch Bookings for this property
-          const bksRes = await fetch(`/api/bookings?propertyId=${found.id}`);
-          const bksResult = await bksRes.json();
-          if (bksResult.success && bksResult.data) {
-            setBookings(bksResult.data);
-          }
+        // 3. Fetch Bookings for this property
+        const bksRes = await fetch(`/api/bookings?propertyId=${found.id}`);
+        const bksResult = await bksRes.json();
+        if (bksResult.success && bksResult.data) {
+          setBookings(bksResult.data);
         }
       }
     } catch (err) {
@@ -241,6 +243,33 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
         {/* Left Side: Property Specs */}
         <div className="lg:col-span-3 space-y-6">
           <div className="rounded-3xl border border-teal-100/80 dark:border-white/10 bg-teal-50/15 dark:bg-white/5 p-6 backdrop-blur-md space-y-4">
+            {property.images && property.images.length > 0 && (
+              <div className="space-y-3">
+                <div className="relative aspect-video rounded-2xl overflow-hidden border border-teal-100/50 dark:border-white/5 bg-zinc-950 animate-fade-in">
+                  <img
+                    src={property.images[activeImageIndex]}
+                    alt={`${property.title} gallery`}
+                    className="w-full h-full object-cover transition-all duration-300 ease-in-out"
+                  />
+                </div>
+                {property.images.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 max-w-full">
+                    {property.images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`relative w-20 aspect-video rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
+                          idx === activeImageIndex ? "border-teal-500 scale-95" : "border-transparent opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <span className="inline-block rounded bg-teal-500/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-600 dark:text-teal-400">
                 Premium Stay
@@ -262,8 +291,8 @@ function PropertyDetailsContent({ slug }: PropertyDetailsContentProps) {
 
             <div className="border-t border-teal-100/60 dark:border-white/5 pt-4">
               <span className="text-[10px] text-teal-800/60 dark:text-zinc-500 uppercase block">About this property</span>
-              <p className="text-xs text-teal-900/90 dark:text-zinc-300 leading-relaxed mt-1">
-                Experience Llandudno at its finest. This property features unparalleled coastline scenery, proximity to the beach, luxury amenities, and private decks. Connect package options and addons at checkout.
+              <p className="text-xs text-teal-900/90 dark:text-zinc-300 leading-relaxed mt-1 whitespace-pre-line">
+                {property.description || "Experience Llandudno at its finest. This property features unparalleled coastline scenery, proximity to the beach, luxury amenities, and private decks. Connect package options and addons at checkout."}
               </p>
             </div>
           </div>

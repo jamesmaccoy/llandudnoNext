@@ -108,15 +108,57 @@ export function getProjectId(): string {
 // PROPERTIES / POSTS CRUD
 // ==========================================
 
-export async function createProperty(data: { id?: string; title: string; slug: string; basePricePerNight: number; airbnbCalendarUrl?: string; googleCalendarUrl?: string }): Promise<any> {
+export async function createProperty(data: {
+  id?: string;
+  title: string;
+  name?: string;
+  slug: string;
+  basePricePerNight: number;
+  airbnbCalendarUrl?: string;
+  googleCalendarUrl?: string;
+  hostId?: string;
+  description?: string;
+  images?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}): Promise<any> {
   const db = getFirestore();
   const id = data.id || data.slug.trim().toLowerCase();
-  const propertyRecord = { ...data, id };
+  const resolvedTitle = data.title || data.name || "";
+  const resolvedName = data.name || data.title || "";
+  const now = new Date().toISOString();
+
+  // Load existing property if it exists to preserve createdAt or hostId
+  let existing: any = null;
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    existing = (dbData.properties || []).find((p: any) => p.id === id);
+  } else {
+    try {
+      const doc = await db.collection("properties").doc(id).get();
+      if (doc.exists) {
+        existing = doc.data();
+      }
+    } catch (_) {}
+  }
+
+  const propertyRecord = {
+    ...data,
+    id,
+    title: resolvedTitle,
+    name: resolvedName,
+    hostId: data.hostId || existing?.hostId || "mock_admin_example_com",
+    description: data.description || existing?.description || "",
+    images: data.images || existing?.images || [],
+    airbnbCalendarUrl: data.airbnbCalendarUrl || existing?.airbnbCalendarUrl || "",
+    googleCalendarUrl: data.googleCalendarUrl || existing?.googleCalendarUrl || "",
+    createdAt: existing?.createdAt || data.createdAt || now,
+    updatedAt: now
+  };
 
   if (isMockMode || !db) {
     const dbData = readMockDb();
     dbData.properties = dbData.properties || [];
-    // Overwrite if exists, otherwise push
     const index = dbData.properties.findIndex((p: any) => p.id === id);
     if (index >= 0) {
       dbData.properties[index] = propertyRecord;
@@ -131,20 +173,43 @@ export async function createProperty(data: { id?: string; title: string; slug: s
   return propertyRecord;
 }
 
-export async function listProperties(): Promise<any[]> {
+export async function listProperties(hostId?: string): Promise<any[]> {
   const db = getFirestore();
 
   if (isMockMode || !db) {
     const dbData = readMockDb();
-    return dbData.properties || [];
+    const list = dbData.properties || [];
+    const normalized = list.map((p: any) => ({
+      hostId: "mock_admin_example_com",
+      ...p
+    }));
+    if (hostId) {
+      return normalized.filter((p: any) => p.hostId === hostId);
+    }
+    return normalized;
   }
 
   try {
-    const snap = await db.collection("properties").get();
-    return snap.docs.map((doc: any) => doc.data());
+    let query: any = db.collection("properties");
+    if (hostId) {
+      query = query.where("hostId", "==", hostId);
+    }
+    const snap = await query.get();
+    return snap.docs.map((doc: any) => ({
+      hostId: "mock_admin_example_com",
+      ...doc.data()
+    }));
   } catch (err) {
     console.error("[Firebase] listProperties error:", err);
-    return readMockDb().properties || [];
+    const list = readMockDb().properties || [];
+    const normalized = list.map((p: any) => ({
+      hostId: "mock_admin_example_com",
+      ...p
+    }));
+    if (hostId) {
+      return normalized.filter((p: any) => p.hostId === hostId);
+    }
+    return normalized;
   }
 }
 

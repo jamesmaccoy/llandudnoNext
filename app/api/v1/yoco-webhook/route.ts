@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateBookingStatus, getEstimate, updateEstimateStatus, createBooking, listBookings } from "@/lib/firebase";
+import { updateBookingStatus, getEstimate, updateEstimateStatus, createBooking, listBookings, promoteUserToAdmin } from "@/lib/firebase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,13 +10,23 @@ export async function POST(request: NextRequest) {
     const payload = body.payload || body;
     const metadata = payload.metadata || {};
     
-    // Defensive extraction of booking ID & estimate ID
+    // Defensive extraction of booking ID, estimate ID & subscription details
     const bookingId = metadata.bookingId || payload.bookingId || body.bookingId;
     const estimateId = metadata.estimateId || payload.estimateId || body.estimateId;
+    const intent = metadata.intent || payload.intent || body.intent;
+    const userId = metadata.userId || payload.userId || body.userId;
+
+    if (intent === "subscription" && userId) {
+      if (eventType === "payment.succeeded" || eventType === "checkout.succeeded" || eventType === "charge.succeeded") {
+        console.log(`[Yoco Webhook] Subscription payment succeeded for user ${userId}. Promoting to Host.`);
+        await promoteUserToAdmin(userId);
+      }
+      return NextResponse.json({ success: true, message: "Subscription processed successfully." });
+    }
 
     if (!bookingId && !estimateId) {
-      console.warn("[Yoco Webhook] No bookingId or estimateId found in webhook payload.");
-      return NextResponse.json({ success: true, message: "Webhook received, but no booking or estimate identifier was found." });
+      console.warn("[Yoco Webhook] No bookingId, estimateId, or subscription intent found in webhook payload.");
+      return NextResponse.json({ success: true, message: "Webhook received, but no action identifier was found." });
     }
 
     if (eventType === "payment.succeeded" || eventType === "checkout.succeeded" || eventType === "charge.succeeded") {

@@ -22,6 +22,11 @@ export default function NavHeader() {
           <Link href="/bookings" className="hover:text-teal-950 dark:hover:text-white transition-colors">
             Bookings
           </Link>
+          {!user?.isAdmin && (
+            <Link href="/subscribe" className="hover:text-teal-950 dark:hover:text-white transition-colors text-teal-500">
+              Become Host
+            </Link>
+          )}
           {user?.isAdmin && (
             <>
               <Link href="/admin/properties" className="hover:text-teal-950 dark:hover:text-white transition-colors">

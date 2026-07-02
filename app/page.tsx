@@ -11,6 +11,9 @@ interface Property {
   title: string;
   slug: string;
   basePricePerNight: number;
+  hostId?: string;
+  images?: string[];
+  description?: string;
 }
 
 function HomePageContent() {
@@ -81,7 +84,12 @@ function HomePageContent() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const res = await fetch("/api/posts");
+        const params = new URLSearchParams(window.location.search);
+        const queryHostId = params.get("hostId");
+        
+        // Load all properties by default for public visitors, or filter by queryHostId if provided
+        const url = queryHostId ? `/api/posts?hostId=${queryHostId}` : "/api/posts";
+        const res = await fetch(url);
         const result = await res.json();
         if (result.success && result.data) {
           setProperties(result.data);
@@ -92,8 +100,10 @@ function HomePageContent() {
         setIsLoadingProps(false);
       }
     };
-    fetchProperties();
-  }, []);
+    if (!authLoading) {
+      fetchProperties();
+    }
+  }, [user, authLoading]);
 
   // Load properties
   useEffect(() => {
@@ -399,6 +409,13 @@ function HomePageContent() {
             After configuring check-in dates, select a property to view options and book your package.
           </p>
 
+          {!isLoadingProps && properties.length > 0 && searchParams.get("hostId") && (
+            <div className="max-w-md mx-auto mb-6 rounded-2xl bg-teal-500/10 border border-teal-500/20 px-4 py-2.5 text-[10px] font-bold text-teal-400 flex items-center justify-between">
+              <span>🏠 Viewing properties published by Host ID: <strong>{searchParams.get("hostId")}</strong></span>
+              <a href="/" className="underline hover:text-white transition-colors">Reset View</a>
+            </div>
+          )}
+
           {isLoadingProps ? (
             <div className="flex flex-col items-center py-12 justify-center">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-teal-500 border-teal-150 dark:border-white/10" />
@@ -414,9 +431,18 @@ function HomePageContent() {
                 return (
                   <div
                     key={p.id}
-                    className="group rounded-3xl border border-teal-100/60 dark:border-white/5 bg-teal-50/15 dark:bg-white/5 p-6 hover:border-teal-200 dark:hover:border-white/10 hover:bg-teal-50/30 dark:hover:bg-white/10 transition-all flex flex-col justify-between"
+                    className="group rounded-3xl border border-teal-100/60 dark:border-white/5 bg-teal-55/15 dark:bg-white/5 p-6 hover:border-teal-200 dark:hover:border-white/10 hover:bg-teal-55/30 dark:hover:bg-white/10 transition-all flex flex-col justify-between"
                   >
                     <div>
+                      {p.images && p.images.length > 0 && (
+                        <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 border border-teal-100/40 dark:border-white/5 bg-zinc-950">
+                          <img
+                            src={p.images[0]}
+                            alt={p.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </div>
+                      )}
                       <span className="inline-block rounded-md bg-teal-500/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-600 dark:text-teal-400">
                         Stay Listing
                       </span>

@@ -4,11 +4,9 @@ import { createProperty, listProperties, isUserAdmin } from "@/lib/firebase";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    // Enforce hostId isolation: default to mock_admin_example_com if no hostId is specified
-    // to preserve public guest views (homepage, bookings list).
-    const hostId = searchParams.get("hostId") || "mock_admin_example_com";
+    const hostId = searchParams.get("hostId") || undefined;
 
-    const list = await listProperties(hostId);
+    const list = await listProperties(hostId || undefined);
     return NextResponse.json({ success: true, data: list, properties: list });
   } catch (err: any) {
     console.error("GET /api/posts error:", err);

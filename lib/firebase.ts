@@ -832,4 +832,24 @@ export async function getBooking(id: string): Promise<any | null> {
   return null;
 }
 
+export async function promoteUserToAdmin(uid: string): Promise<boolean> {
+  const db = getFirestore();
+  if (isMockMode || !db) {
+    const dbData = readMockDb();
+    dbData.userProfiles = dbData.userProfiles || {};
+    dbData.userProfiles[uid] = dbData.userProfiles[uid] || {};
+    dbData.userProfiles[uid].isAdmin = true;
+    writeMockDb(dbData);
+    return true;
+  }
+
+  try {
+    await db.collection("users").doc(uid).set({ isAdmin: true }, { merge: true });
+    return true;
+  } catch (err) {
+    console.error("[Firebase] promoteUserToAdmin error:", err);
+    return false;
+  }
+}
+
 

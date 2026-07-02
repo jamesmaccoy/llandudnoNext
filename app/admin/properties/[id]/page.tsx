@@ -211,7 +211,7 @@ function EditPropertyContent({ id }: { id: string }) {
   }
 
   // Ensure only the property owner can modify this property listing
-  const hasAccess = user && (user.isAdmin && (!property?.hostId || property.hostId === user.uid || property.hostId === "mock_admin_example_com"));
+  const hasAccess = user && (user.isAdmin && (property?.hostId === user.uid || (!property?.hostId && user.uid === "mock_admin_example_com")));
 
   if (!user || !user.isAdmin || !hasAccess) {
     return (

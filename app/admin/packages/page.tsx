@@ -52,9 +52,15 @@ export default function AdminPackagesPage() {
       try {
         const res = await fetch(`/api/posts?hostId=${user.uid}`);
         const result = await res.json();
-        if (result.success && result.data && result.data.length > 0) {
-          setProperties(result.data);
-          setSelectedPropertyId(result.data[0].id);
+        if (result.success && result.data) {
+          // Enforce tenant isolation strictly on client-side:
+          const filtered = result.data.filter((p: any) => 
+            p.hostId === user.uid || (!p.hostId && user.uid === "mock_admin_example_com")
+          );
+          setProperties(filtered);
+          if (filtered.length > 0) {
+            setSelectedPropertyId(filtered[0].id);
+          }
         }
       } catch (err: unknown) {
         const error = err as Error;

@@ -38,7 +38,12 @@ export default function AdminPropertiesPage() {
       const res = await fetch(`/api/posts?hostId=${user.uid}`);
       const result = await res.json();
       if (result.success && result.data) {
-        setProperties(result.data);
+        // Enforce tenant isolation strictly on client-side:
+        // A host can only see properties matching their UID (or legacy mock admin properties if they are the default admin)
+        const filtered = result.data.filter((p: any) => 
+          p.hostId === user.uid || (!p.hostId && user.uid === "mock_admin_example_com")
+        );
+        setProperties(filtered);
       }
     } catch (err: any) {
       console.error("Failed to load properties:", err);

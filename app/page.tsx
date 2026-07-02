@@ -86,7 +86,7 @@ function HomePageContent() {
       try {
         const params = new URLSearchParams(window.location.search);
         const queryHostId = params.get("hostId");
-        
+
         // Load all properties by default for public visitors, or filter by queryHostId if provided
         const url = queryHostId ? `/api/posts?hostId=${queryHostId}` : "/api/posts";
         const res = await fetch(url);
@@ -216,7 +216,7 @@ function HomePageContent() {
         {/* Intro Header */}
         <header className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50/50 dark:bg-white/5 border border-teal-100 dark:border-white/10 text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-4">
-            <span>✨ Simple Plek</span>
+            <span>✨ Surf Yoga Community</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-950 via-zinc-800 to-zinc-600 dark:from-white dark:via-zinc-200 dark:to-zinc-400">
             Unique Packages
@@ -350,8 +350,8 @@ function HomePageContent() {
                     📌 Your Latest Estimate
                   </span>
                   <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${latestEstimate.paymentStatus === "paid"
-                      ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "bg-orange-50/50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-orange-50/50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400"
                     }`}>
                     {latestEstimate.paymentStatus}
                   </span>
@@ -387,8 +387,8 @@ function HomePageContent() {
               onClick={handleSaveDates}
               disabled={isSavingDates || authLoading}
               className={`w-full rounded-xl py-3 text-center text-xs font-bold text-white transition-all ${!user
-                  ? "bg-neutral-800 text-white/35 cursor-not-allowed border border-neutral-700"
-                  : "bg-gradient-to-r from-teal-500 to-emerald-500 shadow-md shadow-teal-500/10 hover:brightness-110 active:scale-95"
+                ? "bg-neutral-800 text-white/35 cursor-not-allowed border border-neutral-700"
+                : "bg-gradient-to-r from-teal-500 to-emerald-500 shadow-md shadow-teal-500/10 hover:brightness-110 active:scale-95"
                 }`}
             >
               {!user
